@@ -1,0 +1,6 @@
+Starting Test...
+Generating audio...
+Connecting to: wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
+TTS WS Error: {"isTrusted":true}
+TTS WS Closed code=1002 reason=Expected 101 status code
+Test Failed: WebSocket connection to 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4' failed: Expected 101 status code {"isTrusted":true}

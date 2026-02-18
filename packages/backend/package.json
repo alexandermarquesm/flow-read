@@ -1,0 +1,29 @@
+{
+  "name": "@flow-read/backend",
+  "version": "1.0.0",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "NODE_ENV=production PORT=4000 bun run src/index.ts",
+    "test": "bun test",
+    "clean": "rm -rf dist coverage"
+  },
+  "dependencies": {
+    "@flow-read/shared": "workspace:*",
+    "@google-cloud/text-to-speech": "^5.0.1",
+    "@google/genai": "^1.41.0",
+    "@types/ws": "^8.18.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "edge-tts-client": "^1.0.2",
+    "mime": "^4.1.0",
+    "node-edge-tts": "^1.2.10",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/mime": "^4.0.0",
+    "bun-types": "latest"
+  }
+}

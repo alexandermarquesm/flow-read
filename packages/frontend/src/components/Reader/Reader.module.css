@@ -1,0 +1,114 @@
+.container {
+  max-width: 740px; /* Optimal reading width */
+  margin: 0 auto;
+  padding: 60px 20px;
+  background-color: var(--color-bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.textArea {
+  background-color: transparent; /* Seamless paper look */
+  padding: 1rem 0; /* Less internal padding, rely on container */
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 1.35rem; /* Larger, more comfortable type */
+  line-height: 1.8;
+  color: var(--color-text);
+  min-height: 50vh;
+  transition: all 0.3s ease;
+  white-space: pre-wrap;
+  font-family: var(--font-body);
+}
+
+.segment {
+  transition: background-color 0.2s ease;
+  border-radius: 4px; /* Slight rounding on highlight edges */
+  padding: 2px 0;
+  /* border-bottom: 2px solid transparent; Optional: ruler style */
+}
+
+.active {
+  background-color: transparent;
+  color: inherit;
+  box-shadow: none;
+}
+
+.wordActive {
+  background-color: #7da38b !important; /* Lighter green */
+  color: #fff !important;
+  border-radius: 2px;
+  font-weight: normal !important; /* Removed bold */
+  box-shadow: 0 0 0 1px #7da38b; /* Slight bleed */
+}
+
+.controls {
+  position: sticky;
+  bottom: 30px;
+  background: rgba(245, 241, 232, 0.95); /* Matches paper bg */
+  backdrop-filter: blur(5px);
+  padding: 10px 24px;
+  border-radius: 30px; /* Pill shape */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: auto;
+  align-self: center;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.btn {
+  background: var(--color-text); /* Dark buttons */
+  color: var(--color-bg); /* Paper text */
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-family: var(--font-ui);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  background: var(--color-primary);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btnSecondary {
+  background: transparent;
+  color: var(--color-text);
+  width: 48px;
+  height: 48px;
+  box-shadow: none;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.btnSecondary:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.inputArea {
+  width: 100%;
+  height: 150px;
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  border: 2px dashed var(--color-secondary);
+  background-color: transparent;
+  font-family: var(--font-body);
+  resize: none;
+  margin-bottom: 1rem;
+}

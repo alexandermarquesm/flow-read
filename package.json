@@ -1,0 +1,31 @@
+{
+  "name": "flow-read",
+  "description": "Flow Read: A modern, distraction-free web reader featuring high-quality text-to-speech synthesis and a Kindle-inspired interface.",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "pnpm -r test",
+    "nuke": "pnpm clean:all && rm -rf node_modules packages/*/node_modules",
+    "clean:all": "pnpm -r run clean",
+    "clean:backend": "pnpm --filter backend clean",
+    "clean:frontend": "pnpm --filter frontend clean",
+    "clean:shared": "pnpm --filter shared clean",
+    "test:backend": "pnpm --filter backend test",
+    "test:frontend": "pnpm --filter frontend test",
+    "test:shared": "pnpm --filter shared test",
+    "dev": "pnpm -r --parallel run dev",
+    "prod": "pnpm -r --parallel --filter backend --filter frontend run start",
+    "build": "pnpm -r run build",
+    "backend:dev": "pnpm --filter backend dev",
+    "frontend:dev": "pnpm --filter frontend dev",
+    "backend:prod": "pnpm --filter backend start",
+    "frontend:prod": "pnpm --filter frontend start"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  },
+  "workspaces": [
+    "packages/*"
+  ]
+}

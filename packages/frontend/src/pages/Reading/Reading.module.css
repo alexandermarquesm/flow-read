@@ -1,0 +1,443 @@
+/* Reading.module.css - Sidebar & Cozy UI */
+
+.container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f8f5f1; /* Slightly lighter cream */
+  color: #433d39;
+  font-family: var(--font-body);
+  display: flex;
+  flex-direction: row; /* Changed to row for Sidebar */
+  overflow: hidden;
+  z-index: 1000;
+}
+
+/* Sidebar Styles - Now handled by shared Sidebar component, except hidden state override */
+.sidebarHidden {
+  margin-left: -16rem;
+}
+
+.sidebarToggleBtn {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  background: white;
+  border: 1px solid rgba(93, 64, 55, 0.1);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  color: #7da38b; /* Sage Green */
+  transition: all 0.2s;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-10px);
+}
+
+.sidebarToggleBtnVisible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.sidebarToggleBtn:hover {
+  background: #7da38b; /* Sage Green */
+  color: white;
+}
+
+/* Main Content Area (Header + Body + Footer) */
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Header */
+.header {
+  height: 60px;
+  flex-shrink: 0;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* Pushed to right since sidebar handles Nav */
+}
+
+/* Header Actions */
+.headerActions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.actionButton,
+.iconButton {
+  color: #7da38b;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.actionButton:hover,
+.iconButton:hover {
+  color: #5d4037;
+}
+
+/* ... (skip to progressBarFill) ... */
+
+.progressBarFill {
+  height: 100%;
+  background: #7da38b;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.footerIcons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.iconButtonRound {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #7da38b; /* Primary color for "Cozy" play button */
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(125, 163, 139, 0.3);
+  transition: all 0.2s;
+}
+
+.iconButtonRound:hover {
+  transform: scale(1.05);
+  background: #6b8f78;
+}
+
+/* Navigation Arrows - Positioning */
+.navArrowLeft,
+.navArrowRight {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #7da38b;
+  z-index: 50;
+  transition: all 0.2s;
+}
+
+.navArrowLeft:hover,
+.navArrowRight:hover {
+  background: #fff;
+  color: #5d4037;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.navArrowLeft {
+  left: 1rem;
+}
+.navArrowRight {
+  right: 1rem;
+}
+
+/* New Layout Container: Using CSS Grid */
+.readingLayout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 200px; /* Text Column | Image Column */
+  grid-template-rows: auto 1fr auto; /* Title | Text | Footer */
+  column-gap: 3rem; /* Space between text and image */
+  row-gap: 2rem; /* Space between title/text/footer */
+
+  overflow: hidden;
+  max-width: 1050px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 4rem; /* Outer padding */
+  padding-right: 2rem;
+}
+
+/* Grid Area: Title (Top Left) */
+.titleSection {
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+  text-align: left;
+  /* margin-bottom handled by row-gap */
+}
+
+.bookTitle {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  color: #5d4037;
+  margin-bottom: 0.25rem;
+  line-height: 1.1;
+}
+
+.chapterSubtitle {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  color: #8d6e63;
+  text-transform: uppercase;
+}
+
+/* Grid Area: Text Content (Middle Left) */
+.textColumn {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+
+  height: 100%;
+  overflow-y: hidden;
+  position: relative;
+  scroll-behavior: smooth;
+}
+
+.textWrapper {
+  max-width: 60ch;
+  padding-bottom: 2rem;
+  border-left: 2px solid #d32f2f;
+  padding-left: 2rem;
+}
+
+.readableText {
+  font-size: 1.25rem;
+  line-height: 1.8;
+  color: #3e3e3e;
+  text-align: left;
+}
+
+/* Drop Cap */
+.firstSegment::first-letter {
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  float: left;
+  line-height: 0.8;
+  margin-right: 0.5rem;
+  margin-top: 0.2rem;
+  color: #5d4037;
+  font-weight: 700;
+}
+
+/* Cozy Highlight */
+.activeSegment {
+  background-color: rgba(255, 213, 79, 0.5) !important;
+  color: inherit !important;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(255, 213, 79, 0.3);
+  transition: background-color 0.2s;
+  font-weight: normal;
+}
+
+/* Grid Area: Side Panel / Image (Middle Right) */
+.sidePanel {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3; /* Starts at same row as text! */
+
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Align to top of grid cell */
+  align-items: center;
+  /* padding-top: 8rem removed -> Grid handles alignment */
+}
+
+.bookCover {
+  width: 100%;
+  border-radius: 4px;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.1),
+    0 10px 20px rgba(0, 0, 0, 0.1);
+  display: block;
+}
+
+/* Info Box (Wikipedia style) */
+/* Metadata Card Styling */
+.metadataCard {
+  width: 100%;
+  margin-top: 1.5rem;
+  background-color: #fcfbf9; /* Very light paper color */
+  border: 1px solid rgba(141, 110, 99, 0.15);
+  border-radius: 4px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.metadataItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metadataLabel {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #a1887f; /* Lighter brown for labels */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metadataValue {
+  font-family: var(
+    --font-heading
+  ); /* Use heading font for a "serif-like" feel if it is serif, or body */
+  font-size: 1rem;
+  color: #5d4037; /* Darker brown for text */
+  line-height: 1.4;
+}
+
+.bookCoverPlaceholder {
+  width: 100%;
+  aspect-ratio: 2/3;
+  background: rgba(93, 64, 55, 0.05);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #8d6e63;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+/* Grid Area: Footer (Bottom Left) */
+.footer {
+  grid-column: 1 / 2;
+  grid-row: 3 / 4;
+
+  height: 100px;
+  border-top: 1px solid rgba(93, 64, 55, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-bottom: 2rem;
+}
+
+/* Center Group: Progress + Controls */
+.footerCenterGroup {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex: 1;
+  max-width: 800px;
+}
+
+.footerProgress {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.pageInfo {
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  color: #5d4037;
+  white-space: nowrap;
+}
+
+.progressBarBg {
+  flex: 1;
+  width: auto; /* Allow flex to control width */
+  height: 6px;
+  background: #ebe5de;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: #8d6e63;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.footerIcons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.iconButtonRound {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #5d4037; /* Primary color for "Cozy" play button */
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(93, 64, 55, 0.3);
+  transition: all 0.2s;
+}
+
+.iconButtonRound:hover {
+  transform: scale(1.05);
+  background: #4e342e;
+}
+
+/* Navigation Arrows - Positioning */
+.navArrowLeft,
+.navArrowRight {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #8d6e63;
+  z-index: 50;
+  transition: all 0.2s;
+}
+
+.navArrowLeft:hover,
+.navArrowRight:hover {
+  background: #fff;
+  color: var(--color-primary);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.navArrowLeft {
+  left: 1rem;
+}
+.navArrowRight {
+  right: 1rem;
+}
