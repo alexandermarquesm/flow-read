@@ -77,6 +77,17 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
           <label className={styles.checkbox}>
             <input
               type="checkbox"
+              checked={settings.playAudio !== false}
+              onChange={(e) => updateSettings({ playAudio: e.target.checked })}
+            />
+            Tocar Áudio (Mudo mantém marcação)
+          </label>
+        </div>
+
+        <div className={styles.group}>
+          <label className={styles.checkbox}>
+            <input
+              type="checkbox"
               checked={highlightEnabled}
               onChange={(e) => setHighlightEnabled(e.target.checked)}
             />

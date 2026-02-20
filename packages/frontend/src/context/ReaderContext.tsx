@@ -32,6 +32,8 @@ interface ReaderContextType {
   setText: (text: string) => void;
   segments: TextSegment[];
   currentSegmentId: string | null;
+  currentSegmentIndex: number;
+  setCurrentSegmentIndex: (index: number) => void;
   currentWordCharIndex?: number;
 
   // Playback Control
@@ -136,6 +138,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     rate: 1,
     volume: 1,
     voiceURI: "edge:pt-BR-FranciscaNeural", // Default to Edge Pt-BR
+    playAudio: true,
   });
 
   // Track if we have initialized text from the active book to prevent overwrites
@@ -252,10 +255,15 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     onWarning: (msg) => showToast(msg),
   });
 
+  const [lastPlayedSegmentIndex, setLastPlayedSegmentIndex] = useState<
+    number | null
+  >(null);
+
   // Trigger speech when index changes
   useEffect(() => {
     if (isReadingSequence && segments[currentSegmentIndex] && !isPaused) {
       const textToSpeak = segments[currentSegmentIndex].text;
+      setLastPlayedSegmentIndex(currentSegmentIndex);
       speak(textToSpeak, settings);
     }
   }, [
@@ -269,7 +277,13 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const play = () => {
     if (isPaused) {
-      synthResume();
+      if (lastPlayedSegmentIndex !== currentSegmentIndex) {
+        // User changed pages while paused. Don't resume old audio!
+        cancel();
+        setIsReadingSequence(true);
+      } else {
+        synthResume();
+      }
       return;
     }
     setIsReadingSequence(true);
@@ -362,6 +376,8 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
         setText: setTextInternal,
         segments,
         currentSegmentId,
+        currentSegmentIndex,
+        setCurrentSegmentIndex,
         currentWordCharIndex,
         isPlaying: isReadingSequence || isSpeaking,
         isPaused,

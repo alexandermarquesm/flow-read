@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Play } from "lucide-react";
+import { WaveDecoration } from "../../components/WaveDecoration";
 import { useReader } from "../../context/ReaderContext";
 import styles from "./Home.module.css";
-
 // Mock Data for "New Arrivals"
 const NEW_ARRIVALS = [
   {
@@ -20,6 +20,7 @@ const NEW_ARRIVALS = [
     color: "#98A6B0",
   },
   { id: "mock5", title: "Golden Hours", author: "Sarah J.", color: "#DBCBBd" },
+  { id: "mock6", title: "Golden Hours", author: "Sarah J.", color: "#DBCBBd" },
 ];
 
 export const Home = () => {
@@ -32,41 +33,47 @@ export const Home = () => {
     <div className={styles.container}>
       {/* Top Main Section */}
       <div className={styles.mainContent}>
-        {/* Left: Hero */}
-        <div className={styles.hero}>
-          <h1 className={styles.heroTitle}>
-            Whispers <em>of the</em> Hearth
-          </h1>
-          <p className={styles.heroSubtitle}>
-            "Find solace in stories, wrapped in warmth. Your personal sanctuary
-            for reading."
-          </p>
-          <button
-            onClick={() => navigate("/reading")}
-            className={styles.ctaButton}
-          >
-            <Play size={20} fill="currentColor" />
-            Continue Reading
-          </button>
+        {/* HERO SECTION (H): Title + Subtitle + Button */}
+        <div className={styles.heroSection}>
+          <div className={styles.heroContent}>
+            <h1 className={styles.heroTitle}>
+              A Ilíada <em>de Homero</em>
+            </h1>
+            <WaveDecoration className={styles.waveDecoration} />
+
+            <div className={styles.heroContent}>
+              <button
+                onClick={() => navigate("/reading")}
+                className={styles.ctaButton}
+              >
+                <Play size={20} fill="currentColor" />
+                Read Now
+              </button>
+            </div>
+          </div>
+
+          <div className={styles.heroImageContainer}>
+            <img
+              className={styles.heroImage}
+              src="https://m.media-amazon.com/images/I/91VS8lg9+QL._AC_UF1000,1000_QL80_.jpg"
+              alt="Cozy reading corner"
+            />
+            <p className={styles.heroSubtitle}>
+              "Like the generations of leaves, the lives of mortal men."
+            </p>
+          </div>
         </div>
 
-        {/* Right: Current Reading Vertical Card */}
+        {/* SIDEBAR (L): Book Card */}
         <div className={styles.currentSection}>
           <div
             className={styles.currentCard}
             onClick={() => navigate("/reading")}
           >
-            {/* Top Half: Book Cover as Image */}
             <div className={styles.cardImageContainer}>
-              {currentBook?.coverUrl ? (
-                <img src={currentBook.coverUrl} alt={currentBook.title} />
-              ) : (
-                // Fallback to illustration if no real cover
-                <img src="/cozy-corner.png" alt="Cozy reading corner" />
-              )}
+              <img src="/cozy-corner.png" alt="Cozy reading corner" />
             </div>
 
-            {/* Bottom Half: Content with Real Data */}
             <div className={styles.cardContent}>
               <div>
                 <h3 className={styles.sectionLabel}>Currently Reading</h3>
@@ -97,30 +104,40 @@ export const Home = () => {
                 Daily Dose of Comfort
                 <br /> you hold in hands.
               </p>
+
+              <button
+                className={styles.cardButton}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate("/reading");
+                }}
+              >
+                Continue Reading
+              </button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Bottom: New Arrivals */}
-      <div className={styles.arrivalsSection}>
-        <div className={styles.arrivalsHeader}>
-          <span className={styles.arrivalsLabel}>New Arrivals</span>
-        </div>
+        {/* NEW ARRIVALS (N): Full Width Bottom */}
+        <div className={styles.arrivalsSection}>
+          <div className={styles.arrivalsHeader}>
+            <span className={styles.arrivalsLabel}>New Arrivals</span>
+          </div>
 
-        <div className={styles.arrivalsGrid}>
-          {NEW_ARRIVALS.map((book) => (
-            <div key={book.id} className={styles.arrivalCard}>
-              <div
-                className={styles.arrivalCover}
-                style={{ backgroundColor: book.color }}
-              ></div>
-              <div>
-                <h4 className={styles.arrivalTitle}>{book.title}</h4>
-                <p className={styles.arrivalAuthor}>{book.author}</p>
+          <div className={styles.arrivalsGrid}>
+            {NEW_ARRIVALS.map((book) => (
+              <div key={book.id} className={styles.arrivalCard}>
+                <div
+                  className={styles.arrivalCover}
+                  style={{ backgroundColor: book.color }}
+                ></div>
+                <div>
+                  <h4 className={styles.arrivalTitle}>{book.title}</h4>
+                  <p className={styles.arrivalAuthor}>{book.author}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

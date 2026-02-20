@@ -28,6 +28,12 @@
   margin: 0;
 }
 
+.brandLogo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
 /* Navigation Section */
 .nav {
   flex: 1;
@@ -88,4 +94,10 @@
 
 .settingsBtn:hover {
   color: var(--color-primary);
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    display: none !important; /* Force hide with !important to override flex */
+  }
 }

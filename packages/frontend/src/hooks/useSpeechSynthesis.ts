@@ -5,6 +5,7 @@ export interface SpeechSettings {
   rate: number;
   volume: number;
   voiceURI: string | null;
+  playAudio?: boolean;
 }
 
 interface UseSpeechSynthesisProps {
@@ -144,6 +145,9 @@ export const useSpeechSynthesis = ({
         // Apply settings
         audio.playbackRate = settings.rate;
         audio.volume = currentVolume;
+        if (settings.playAudio === false) {
+          audio.muted = true;
+        }
 
         // Preserve audio ref
         audioRef.current = audio;

@@ -26,6 +26,8 @@ export const Reading = () => {
     activeBookId,
     segments,
     currentSegmentId,
+    currentSegmentIndex,
+    setCurrentSegmentIndex,
     currentWordCharIndex,
     isPlaying,
     isPaused,
@@ -75,11 +77,11 @@ export const Reading = () => {
   // Sync currentPage with book.currentSegmentIndex ON MOUNT or when segments load
   useEffect(() => {
     if (activeBookId && segments.length > 0 && isInitialLoad.current) {
-      const currentSegmentIndex = currentBook.currentSegmentIndex || 0;
+      const initialIndex = currentBook.currentSegmentIndex || 0;
 
       // Calculate word position of current segment
       let wordPos = 0;
-      for (let i = 0; i < currentSegmentIndex; i++) {
+      for (let i = 0; i < initialIndex; i++) {
         wordPos += segments[i].text.trim().split(/\s+/).length;
       }
 
@@ -87,23 +89,34 @@ export const Reading = () => {
       setCurrentPage(savedPage);
       isInitialLoad.current = false;
     }
-  }, [activeBookId, segments.length]); // Added segments.length dependency
+  }, [activeBookId, segments.length, currentBook.currentSegmentIndex]);
 
   // 4. Update Page when Reading (Auto-Advance)
   useEffect(() => {
     if (isPlaying && segments.length > 0) {
-      const currentSegmentIndex = currentBook.currentSegmentIndex || 0;
+      // NOTE: We use the context's currentSegmentIndex, NOT the book's, for real-time play
       let wordPos = 0;
       for (let i = 0; i < currentSegmentIndex; i++) {
         wordPos += segments[i].text.trim().split(/\s+/).length;
       }
-      const readingPage = Math.floor(wordPos / WORDS_PER_PAGE) + 1;
 
-      if (readingPage !== currentPage) {
+      const segmentWordCount =
+        segments[currentSegmentIndex]?.text.trim().split(/\s+/).length || 0;
+      const segmentStart = wordPos;
+      const segmentEnd = wordPos + segmentWordCount;
+
+      const pageStartWord = (currentPage - 1) * WORDS_PER_PAGE;
+      const pageEndWord = currentPage * WORDS_PER_PAGE;
+
+      const isVisibleContent =
+        segmentStart < pageEndWord && segmentEnd > pageStartWord;
+
+      if (!isVisibleContent) {
+        const readingPage = Math.floor(wordPos / WORDS_PER_PAGE) + 1;
         setCurrentPage(readingPage);
       }
     }
-  }, [currentBook.currentSegmentIndex, isPlaying, segments, WORDS_PER_PAGE]);
+  }, [currentSegmentIndex, isPlaying, segments, currentPage]);
 
   // 5. Persist Page Change to Book Progress (Decoupled Side Effect)
   useEffect(() => {
@@ -121,7 +134,6 @@ export const Reading = () => {
       // Find segment that contains the start word
       for (let i = 0; i < segments.length; i++) {
         const w = segments[i].text.trim().split(/\s+/).length;
-        // If this segment *ends* after the page start, it's the first segment (or overlaps start)
         if (wordCount + w > pageStartWord) {
           targetIndex = i;
           break;
@@ -129,12 +141,19 @@ export const Reading = () => {
         wordCount += w;
       }
 
-      // Only update if significantly different to avoid loops?
-      // Actually, updating progress is safe as long as it doesn't force currentPage back.
-      // And since currentPage drives this, it's fine.
-      updateBookProgress(activeBookId, targetIndex);
+      // Prevent render loops: ONLY update if the index actually drifted
+      if (targetIndex !== currentBook.currentSegmentIndex) {
+        updateBookProgress(activeBookId, targetIndex);
+      }
     }
-  }, [currentPage, activeBookId, segments, isPlaying]);
+  }, [
+    currentPage,
+    isPlaying,
+    segments,
+    activeBookId,
+    currentBook.currentSegmentIndex,
+    updateBookProgress,
+  ]); // Safe from loops due to targetIndex guard
 
   // 6. Get Visible Segments for Current Page
   const visibleSegments = useMemo(() => {
@@ -156,27 +175,72 @@ export const Reading = () => {
       if (currentWordCount > pageEndWord) break;
     }
     return pageSegments;
-  }, [currentPage, segments, WORDS_PER_PAGE]);
+  }, [currentPage, segments]);
 
   // Calculate Progress % for footer
-  const progressPercentage = Math.round(((currentPage - 1) / totalPages) * 100);
+  const progressPercentage = Math.round((currentPage / totalPages) * 100);
 
   // Animation Direction
   const [direction, setDirection] = useState(0);
 
   // Handle Manual Page Turn (UI Only)
   const handlePageTurn = (moveDirection: "next" | "prev") => {
+    let targetPage = currentPage;
     if (moveDirection === "next") {
       if (currentPage < totalPages) {
         setDirection(1);
-        setCurrentPage((prev) => prev + 1);
+        targetPage = currentPage + 1;
+        setCurrentPage(targetPage);
       }
     } else {
       if (currentPage > 1) {
         setDirection(-1);
-        setCurrentPage((prev) => prev - 1);
+        targetPage = currentPage - 1;
+        setCurrentPage(targetPage);
       }
     }
+
+    if (targetPage !== currentPage && activeBookId && segments.length > 0) {
+      // Sync audio position to the top of the newly turned page
+      const pageStartWord = (targetPage - 1) * WORDS_PER_PAGE;
+      let wordCount = 0;
+      let targetIndex = 0;
+      for (let i = 0; i < segments.length; i++) {
+        const w = segments[i].text.trim().split(/\s+/).length;
+        if (wordCount + w > pageStartWord) {
+          targetIndex = i;
+          break;
+        }
+        wordCount += w;
+      }
+      setCurrentSegmentIndex(targetIndex);
+      updateBookProgress(activeBookId, targetIndex);
+    }
+  };
+
+  // Swipe support for mobile
+  const touchStartX = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const distanceX = touchEndX - touchStartX.current;
+
+    // minimum distance for swipe to trigger a page turn
+    if (Math.abs(distanceX) > 50) {
+      if (distanceX > 0) {
+        // Swiped right - go to previous page
+        handlePageTurn("prev");
+      } else {
+        // Swiped left - go to next page
+        handlePageTurn("next");
+      }
+    }
+    touchStartX.current = null;
   };
 
   // Scroll to top when page changes
@@ -268,7 +332,12 @@ export const Reading = () => {
           </div>
 
           {/* Row 2 Col 1: Text Content */}
-          <div className={styles.textColumn} ref={textColumnRef}>
+          <div
+            className={styles.textColumn}
+            ref={textColumnRef}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <AnimatePresence
               initial={false}
               custom={direction}

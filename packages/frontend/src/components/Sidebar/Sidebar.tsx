@@ -17,7 +17,11 @@ export const Sidebar = ({ className, style }: SidebarProps) => {
     <aside className={`${styles.sidebar} ${className || ""}`} style={style}>
       <div className={styles.brand}>
         <h1 className={styles.brandTitle}>
-          <BookOpen size={32} />
+          <img
+            src="/logo.png"
+            alt="Flow Reader Logo"
+            className={styles.brandLogo}
+          />
           Flow Reader
         </h1>
       </div>

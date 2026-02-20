@@ -11,52 +11,83 @@
   box-sizing: border-box;
   font-family: var(--font-body);
   align-items: center; /* Center horizontally */
+  justify-content: center; /* Center vertically */
+  position: relative;
 }
 
-/* Central Block: Hero + Card */
 .mainContent {
-  flex: 1; /* Take vertical space */
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center; /* Center content */
-  gap: 3rem; /* "Colado" */
+  /* flex: 1; REMOVED to allow container to center it */
+  display: grid;
+  grid-template-areas:
+    "hero sidebar"
+    "arrivals arrivals";
+  grid-template-columns: 1fr 220px; /* Fluid Hero, Fixed Sidebar (smaller) */
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 3rem;
   width: 100%;
-  max-width: 900px; /* Constrain width for alignment */
-  padding: 0 1rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem; /* Revert to normal padding */
 }
 
-/* LEFT: Hero Section */
-.hero {
-  flex: 1; /* Take available width */
+/* HERO SECTION (H) */
+.heroSection {
+  grid-area: hero;
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  /* background-color: chartreuse; */
+}
+
+.heroContent {
+  display: flex;
+  width: 100%;
   flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 0.75rem;
-  /* max-width not strictly needed if flex:1 handles it */
+  gap: 1.5rem;
+  text-align: center; /* Center text */
+}
+
+.waveDecoration {
+  margin: 0.5rem 0 1rem 0; /* Add space around the wave */
+  opacity: 0.7;
+}
+
+.heroImageContainer {
+  display: flex;
+  width: 300px;
+  flex-direction: column;
+}
+
+.heroImage {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  /* object-fit: cover; */
 }
 
 .heroTitle {
   font-family: var(--font-heading);
-  font-size: 3rem;
-  line-height: 1.1;
+  font-size: 4rem; /* Significantly larger */
+  line-height: 1;
   color: #5d4037;
   margin: 0;
+  width: 300px;
 }
 
 .heroTitle em {
-  display: block;
+  display: inline-block; /* Inline for flow */
   font-style: italic;
   font-weight: 400;
-  font-size: 2.5rem;
+  font-size: 4.5rem;
   color: #8d6e63;
+  margin-left: 0.5rem;
 }
 
 .heroSubtitle {
   font-size: 1rem;
   color: #8d6e63;
-  margin-bottom: 0.5rem;
   line-height: 1.4;
 }
 
@@ -77,6 +108,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  max-width: 250px;
 }
 
 .ctaButton:hover {
@@ -93,48 +125,50 @@
 }
 
 .currentCard {
-  background: #fdfbf7;
-  width: 220px;
+  background: #fdfbf7; /* Cream background */
+  width: 100%;
+  max-width: 220px; /* Smaller card as requested */
   border-radius: 12px;
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.05),
-    0 12px 30px rgba(93, 64, 55, 0.1);
+    0 4px 12px rgba(93, 64, 55, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(141, 110, 99, 0.1);
+  /* border: 1px solid rgba(141, 110, 99, 0.1); REMOVED border for cleaner look */
   overflow: hidden;
   transition: transform 0.3s ease;
   cursor: pointer;
-  margin-top: -2rem; /* Keep existing visual lift */
+  margin-top: 0;
 }
 
 .currentCard:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 35px rgba(93, 64, 55, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(93, 64, 55, 0.12);
 }
 
 /* Image Area */
 .cardImageContainer {
   width: 100%;
-  height: 240px;
+  height: 180px; /* Adjusted height for smaller card */
   background-color: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 0; /* REMOVED padding for full-width look */
 }
 
 .cardImageContainer img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  border-radius: 4px;
+  object-fit: cover; /* Cover: fill the area entirely */
+  border-radius: 12px 12px 0 0; /* Radius on top only */
   transition: transform 0.3s;
   transform-origin: center center;
+  filter: sepia(0.1); /* Slight warm tone */
 }
 
 .currentCard:hover .cardImageContainer img {
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
 /* Content Area */
@@ -147,16 +181,17 @@
 }
 
 .sectionLabel {
-  font-family: var(--font-heading);
-  font-size: 1rem;
+  font-family: var(--font-heading); /* Serif */
+  font-size: 1.1rem;
   color: #5d4037;
-  font-weight: 400;
+  font-weight: 500;
   margin-bottom: 0px;
+  text-align: center;
 }
 
 .currentTitle {
-  font-family: var(--font-ui);
-  font-size: 0.7rem;
+  font-family: var(--font-body); /* Sans-serif */
+  font-size: 0.75rem;
   color: #8d6e63;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -165,6 +200,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 600;
+  text-align: center;
 }
 
 /* Progress Bar */
@@ -173,12 +209,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  margin-top: 0.25rem;
+  margin-top: 0.75rem;
 }
 
 .progressBar {
   height: 6px;
-  background: #f0ebe5;
+  background: #efebe9; /* Lighter beige */
   border-radius: 3px;
   width: 100%;
   overflow: hidden;
@@ -186,7 +222,7 @@
 
 .progressFill {
   height: 100%;
-  background: #a1887f;
+  background: #a1887f; /* Muted brown */
   border-radius: 3px;
 }
 
@@ -196,30 +232,54 @@
   font-size: 0.65rem;
   color: #8d6e63;
   font-weight: 600;
+  padding: 0 2px;
 }
 
 .dailyQuote {
-  font-family: var(--font-heading);
-  font-size: 0.9rem;
-  line-height: 1.3;
+  font-family: var(--font-heading); /* Serif */
+  font-size: 0.95rem;
+  line-height: 1.4;
   color: #5d4037;
-  margin-top: 0.5rem;
+  margin-top: 1rem;
+  text-align: center;
+  font-style: italic;
 }
 
-/* BOTTOM: New Arrivals */
-.arrivalsSection {
+.cardButton {
+  margin-top: 1.25rem;
+  background-color: #7da38b; /* Sage Green */
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   width: 100%;
-  max-width: 900px; /* ALIGN WITH MAIN CONTENT */
-  display: flex; /* Ensure flex behavior */
+  box-shadow: 0 4px 12px rgba(125, 163, 139, 0.4);
+}
+
+.cardButton:hover {
+  background-color: #6b8f78;
+  transform: translateY(-1px);
+}
+
+/* BOTTOM: New Arrivals (N) - Full Width */
+.arrivalsSection {
+  grid-area: arrivals;
+  width: 100%;
+  display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 0 1rem 1.5rem 1rem; /* Same padding as mainContent */
-  align-self: center; /* Center horizontally in container flex col */
+  gap: 1.5rem;
+  margin-top: 1rem;
 }
 
 .arrivalsHeader {
   display: flex;
-  justify-content: flex-start; /* Align Text LEFT, matching Hero Title start */
+  justify-content: flex-start;
   align-items: center;
   width: 100%;
 }
@@ -228,18 +288,16 @@
   font-family: var(--font-ui);
   text-transform: uppercase;
   letter-spacing: 2px;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: #8d6e63;
   font-weight: 700;
 }
 
 .arrivalsGrid {
   display: flex;
-  gap: 1.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-  scrollbar-width: none;
-  /* Align grid start with header/hero left edge */
+  gap: 2rem;
+  flex-wrap: wrap;
+  width: 100%;
   justify-content: flex-start;
 }
 
@@ -297,54 +355,97 @@
 }
 
 /* Responsive */
+/* Responsive */
 @media (max-width: 1024px) {
   .heroTitle {
-    font-size: 2.5rem;
+    font-size: 3rem;
   }
   .heroTitle em {
-    font-size: 2rem;
+    font-size: 3.5rem;
   }
   .mainContent {
     gap: 2rem;
-    padding: 0 1.5rem;
-  }
-  .arrivalsSection {
-    padding: 0 1.5rem 1.5rem;
+    padding: 2rem;
+    /* Clean up grid for tablet landscape */
+    grid-template-columns: 1fr 200px;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  /* Container allows scrolling */
   .container {
     height: auto;
-    overflow: auto;
-    padding: 1.5rem;
-    display: flex;
+    min-height: 100vh;
+    overflow-y: auto;
+    padding: 1rem 0; /* Minimal padding on wrapper */
   }
+
+  /* Switch entire layout to vertical flex */
   .mainContent {
+    display: flex;
     flex-direction: column;
-    gap: 2rem;
-    margin-top: 1rem;
+    gap: 3rem;
+    padding: 1.5rem;
+    align-items: center;
+    max-width: 100%;
+    margin-top: 0;
+  }
+
+  /* Stack Hero: Image Top, Text Bottom */
+  .heroSection {
+    flex-direction: column-reverse;
+    gap: 1.5rem;
+    width: 100%;
+    align-items: center;
+  }
+
+  .heroContent {
     align-items: center;
     text-align: center;
+    width: 100%;
+    max-width: 500px;
   }
-  .hero {
-    align-items: center;
+
+  .heroTitle {
+    font-size: 2.5rem;
+    width: 100%;
   }
+
+  .heroTitle em {
+    font-size: 3rem;
+  }
+
+  /* Adjust Hero Image */
+  .heroImageContainer {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  /* Center Sidebar Card */
   .currentSection {
-    margin-top: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
   }
+
   .currentCard {
-    margin-top: 0;
+    max-width: 260px; /* Let it grow a bit on mobile */
   }
+
+  /* New Arrivals Grid */
   .arrivalsSection {
-    margin-top: 2rem;
+    width: 100%;
+    margin-top: 1rem;
     align-items: center;
-  } /* Center arrivals on mobile */
+  }
+
   .arrivalsHeader {
     justify-content: center;
+    margin-bottom: 1.5rem;
   }
+
   .arrivalsGrid {
     justify-content: center;
-    flex-wrap: wrap;
+    gap: 1.5rem;
   }
 }

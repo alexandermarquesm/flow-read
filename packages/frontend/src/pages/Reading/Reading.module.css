@@ -175,6 +175,7 @@
   row-gap: 2rem; /* Space between title/text/footer */
 
   overflow: hidden;
+  overflow-x: hidden; /* Prevent horizontal scroll on page turn animation */
   max-width: 1050px;
   margin: 0 auto;
   width: 100%;
@@ -213,6 +214,7 @@
 
   height: 100%;
   overflow-y: hidden;
+  overflow-x: hidden; /* Hide horizontal scrollbar during animation */
   position: relative;
   scroll-behavior: smooth;
 }
@@ -440,4 +442,84 @@
 }
 .navArrowRight {
   right: 1rem;
+}
+
+/* Responsive Styles */
+@media (max-width: 900px) {
+  .readingLayout {
+    grid-template-columns: 1fr;
+    padding: 0 1.5rem;
+    row-gap: 1.5rem;
+  }
+
+  .sidePanel {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .footer {
+    height: auto;
+    padding-top: 1rem;
+  }
+
+  /* Keep it a row but allow slightly tighter spacing */
+  .footerCenterGroup {
+    flex-direction: row;
+    gap: 1rem;
+    width: 100%;
+    align-items: center;
+  }
+
+  .footerProgress {
+    width: auto;
+    flex: 1; /* Allow progress bar section to grow */
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .progressBarBg {
+    flex: 1;
+    max-width: 100%;
+  }
+
+  /* Hide auxiliary buttons on mobile so Play button aligns next to progress bar */
+  .footerIcons button:not(.iconButtonRound) {
+    display: none;
+  }
+
+  .textColumn {
+    overflow-y: auto; /* Override hidden */
+    overflow-x: hidden;
+    touch-action: pan-y; /* Prevent browser horizontal swipe gestures */
+    position: relative;
+    width: 100%;
+  }
+
+  /* Fade out gradient at the bottom */
+  .textColumn::after {
+    content: "";
+    position: fixed;
+    bottom: 80px; /* Adjust to stay above the footer */
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(to top, #f8f5f1 10%, rgba(248, 245, 241, 0));
+    pointer-events: none; /* Let clicks pass through */
+    z-index: 10;
+  }
+
+  .textWrapper {
+    border-left: none;
+    padding-left: 0;
+    overflow-y: auto; /* Allow scrolling if it still overflows */
+    padding-bottom: 2rem; /* Give a little breathing room at the bottom */
+  }
+
+  .navArrowLeft,
+  .navArrowRight {
+    display: none;
+  }
 }
