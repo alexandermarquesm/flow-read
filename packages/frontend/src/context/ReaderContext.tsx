@@ -39,6 +39,7 @@ interface ReaderContextType {
   // Playback Control
   isPlaying: boolean;
   isPaused: boolean;
+  isSynthesizing: boolean;
   play: () => void;
   pause: () => void;
   resume: () => void;
@@ -255,6 +256,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
   const {
     isSpeaking,
     isPaused,
+    isSynthesizing,
     speak,
     pause: synthPause,
     resume: synthResume,
@@ -391,6 +393,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
         currentWordCharIndex,
         isPlaying: isReadingSequence || isSpeaking,
         isPaused,
+        isSynthesizing,
         highlightEnabled,
         setHighlightEnabled,
         settings,

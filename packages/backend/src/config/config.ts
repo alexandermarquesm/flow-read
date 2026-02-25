@@ -8,4 +8,8 @@ export const config = {
   googleCloud: {
     keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
   },
+  azureTts: {
+    key: process.env.AZURE_TTS_KEY || "",
+    region: process.env.AZURE_TTS_REGION || "",
+  },
 };

@@ -14,14 +14,22 @@ interface UseSpeechSynthesisProps {
   onWarning?: (message: string) => void;
 }
 
+export interface CustomVoice extends Partial<SpeechSynthesisVoice> {
+  name: string;
+  voiceURI: string;
+  lang: string;
+  provider: string;
+}
+
 export const useSpeechSynthesis = ({
   onEnd,
   onBoundary,
   onWarning,
 }: UseSpeechSynthesisProps = {}) => {
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voices, setVoices] = useState<CustomVoice[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -32,37 +40,91 @@ export const useSpeechSynthesis = ({
         const response = await fetch("http://localhost:4000/api/voices"); // Backend URL
         if (response.ok) {
           const data = await response.json();
-          const mappedVoices = data.map((v: any) => ({
+          let mappedVoices = data.map((v: any) => ({
             name: v.name,
             voiceURI: v.id,
             lang: v.languageCode,
+            provider: v.provider, // Include provider
             default: false,
             localService: false,
           }));
 
-          // Sort voices: Francisca first, then other Microsoft/Edge voices, then Gemini/others
-          mappedVoices.sort((a: any, b: any) => {
-            const isFranciscaA = a.name.includes("Francisca");
-            const isFranciscaB = b.name.includes("Francisca");
+          // Filter and Curate voices
+          mappedVoices = mappedVoices.filter((v: any) => {
+            const l = v.lang.toLowerCase();
+            const provider = v.provider;
+            const name = v.name.toLowerCase();
 
-            // 1. Francisca always at the top
+            // 1. Azure restriction: Strictly only 3 specific high-quality voices
+            if (provider === "azure") {
+              // We want specific variants to avoid duplicates
+              const isThalita =
+                name.includes("thalita") && name.includes("dragon");
+              const isLeila =
+                name.includes("leila") && !name.includes("multilingual");
+              const isAndrew =
+                name.includes("andrew") &&
+                (name.includes("multilingual") || name.includes("neural"));
+
+              // Only keep the first match of each type if there are multiples
+              return isThalita || isLeila || isAndrew;
+            }
+
+            // 2. Other providers: pt-BR, en-US, en-GB only
+            return l === "pt-br" || l === "en-us" || l === "en-gb";
+          });
+
+          // Sort voices: Francisca (Edge) ALWAYS first, then group by provider
+          mappedVoices.sort((a: any, b: any) => {
+            const isFranciscaA =
+              a.provider === "edge" && a.name.includes("Francisca");
+            const isFranciscaB =
+              b.provider === "edge" && b.name.includes("Francisca");
+
             if (isFranciscaA && !isFranciscaB) return -1;
             if (!isFranciscaA && isFranciscaB) return 1;
 
-            // 2. Microsoft/Edge voices come before Gemini/others
-            const isEdgeA =
-              a.voiceURI.startsWith("edge:") || a.name.includes("Microsoft");
-            const isEdgeB =
-              b.voiceURI.startsWith("edge:") || b.name.includes("Microsoft");
+            // Custom order for Azure voices
+            if (a.provider === "azure" && b.provider === "azure") {
+              const azureOrder = ["thalita", "leila", "andrew"];
+              const indexA = azureOrder.findIndex((n) =>
+                a.name.toLowerCase().includes(n),
+              );
+              const indexB = azureOrder.findIndex((n) =>
+                b.name.toLowerCase().includes(n),
+              );
+              return indexA - indexB;
+            }
 
-            if (isEdgeA && !isEdgeB) return -1;
-            if (!isEdgeA && isEdgeB) return 1;
+            // Group by provider for others
+            if (a.provider !== b.provider) {
+              return a.provider.localeCompare(b.provider);
+            }
 
-            // 3. Alphabetical for the rest
+            // Alphabetical within same provider
             return a.name.localeCompare(b.name);
           });
 
-          setVoices(mappedVoices);
+          // Final cleanup: Ensure only ONE of each Azure voice (in case multiple variants matched)
+          const finalVoices: CustomVoice[] = [];
+          const azureSeen = new Set<string>();
+
+          mappedVoices.forEach((v: CustomVoice) => {
+            if (v.provider === "azure") {
+              const azureOrder = ["thalita", "leila", "andrew"];
+              const key = azureOrder.find((n) =>
+                v.name.toLowerCase().includes(n),
+              );
+              if (key && !azureSeen.has(key)) {
+                azureSeen.add(key);
+                finalVoices.push(v);
+              }
+            } else {
+              finalVoices.push(v);
+            }
+          });
+
+          setVoices(finalVoices);
         }
       } catch (error) {
         console.error("Failed to fetch voices:", error);
@@ -100,6 +162,7 @@ export const useSpeechSynthesis = ({
 
       if (!text) return;
 
+      setIsSynthesizing(true);
       setIsSpeaking(true);
       setIsPaused(false);
 
@@ -123,17 +186,23 @@ export const useSpeechSynthesis = ({
 
         if (requestId !== requestRef.current) {
           // Request was cancelled or superseded
+          setIsSynthesizing(false);
           return;
         }
 
         if (!response.ok) {
+          setIsSynthesizing(false);
           throw new Error("TTS Request failed");
         }
 
         const data = await response.json();
 
-        if (requestId !== requestRef.current) return;
+        if (requestId !== requestRef.current) {
+          setIsSynthesizing(false);
+          return;
+        }
 
+        setIsSynthesizing(false);
         const { audio: audioData, marks, warning } = data;
 
         if (warning && onWarning) {
@@ -223,6 +292,7 @@ export const useSpeechSynthesis = ({
           console.error("TTS Error:", error);
           setIsSpeaking(false);
           setIsPaused(false);
+          setIsSynthesizing(false);
         }
       }
     },
@@ -247,6 +317,7 @@ export const useSpeechSynthesis = ({
     voices,
     isSpeaking,
     isPaused,
+    isSynthesizing,
     speak,
     pause,
     resume,

@@ -17,6 +17,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "edge-tts-client": "^1.0.2",
+    "microsoft-cognitiveservices-speech-sdk": "^1.48.0",
     "mime": "^4.1.0",
     "node-edge-tts": "^1.2.10",
     "ws": "^8.19.0"

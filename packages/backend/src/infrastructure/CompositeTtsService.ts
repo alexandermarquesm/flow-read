@@ -50,6 +50,14 @@ export class CompositeTtsService implements ITtsService {
       return edgeService.synthesize(options);
     }
 
+    if (voiceId.startsWith("azure:")) {
+      const azureService = this.services.find(
+        (s) => s.constructor.name === "AzureTtsService",
+      );
+      if (!azureService) throw new Error("Azure Service not available");
+      return azureService.synthesize(options);
+    }
+
     if (voiceId.startsWith("gemini:")) {
       const geminiService = this.services.find(
         (s) => s.constructor.name === "GeminiTtsService",

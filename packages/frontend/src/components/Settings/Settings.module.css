@@ -14,13 +14,14 @@
 
 .modal {
   background: var(--color-paper);
-  padding: 2.5rem;
+  padding: 2rem 2.5rem 2.5rem;
   border-radius: var(--radius-sm); /* Sharper corners for book feel */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
   width: 90%;
-  max-width: 400px;
-  animation: slideUp 0.3s ease;
+  max-width: 420px;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid rgba(0, 0, 0, 0.05);
+  position: relative;
 }
 
 @keyframes slideUp {
@@ -81,15 +82,44 @@
   letter-spacing: 0.05em;
 }
 
+.selectWrapper {
+  position: relative;
+  width: 100%;
+}
+
 .select {
   width: 100%;
-  padding: 0.8rem;
-  border: 1px solid var(--color-secondary);
+  padding: 0.8rem 2.5rem 0.8rem 1rem;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
   border-radius: var(--radius-sm);
-  font-family: var(--font-ui); /* Better for UI controls */
+  font-family: var(--font-ui);
   font-size: 0.95rem;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.02);
   color: var(--color-text);
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select:hover {
+  border-color: var(--color-primary);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(114, 85, 60, 0.1);
+}
+
+.dropdownArrow {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-primary);
+  opacity: 0.7;
 }
 
 .checkbox {

@@ -31,6 +31,7 @@ export const Reading = () => {
     currentWordCharIndex,
     isPlaying,
     isPaused,
+    isSynthesizing,
     play,
     pause,
     resume,
@@ -489,27 +490,32 @@ export const Reading = () => {
               </div>
 
               <div className={styles.footerIcons}>
-                {!isPlaying || isPaused ? (
-                  <button
-                    className={styles.iconButtonRound}
-                    onClick={isPlaying ? resume : play}
-                    title="Play"
-                  >
+                <button
+                  className={styles.iconButtonRound}
+                  onClick={isPlaying ? (isPaused ? resume : pause) : play}
+                  title={
+                    isSynthesizing
+                      ? "Carregando..."
+                      : isPlaying
+                        ? isPaused
+                          ? "Continuar"
+                          : "Pausar"
+                        : "Play"
+                  }
+                  disabled={isSynthesizing}
+                >
+                  {isSynthesizing ? (
+                    <div className={styles.spinner} />
+                  ) : isPlaying && !isPaused ? (
+                    <Pause size={20} fill="currentColor" />
+                  ) : (
                     <Play
                       size={20}
                       fill="currentColor"
                       className={styles.playIconAdjust}
                     />
-                  </button>
-                ) : (
-                  <button
-                    className={styles.iconButtonRound}
-                    onClick={pause}
-                    title="Pause"
-                  >
-                    <Pause size={20} fill="currentColor" />
-                  </button>
-                )}
+                  )}
+                </button>
 
                 <button className={styles.iconButton} title="Share">
                   <Share2 size={18} />

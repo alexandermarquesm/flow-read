@@ -3,5 +3,5 @@ export interface Voice {
   name: string;
   languageCode: string;
   gender: "MALE" | "FEMALE" | "NEUTRAL" | "SSML_VOICE_GENDER_UNSPECIFIED";
-  provider: "google" | "edge" | "google-gemini"; // Extensible for other providers
+  provider: "google" | "edge" | "google-gemini" | "azure"; // Extensible for other providers
 }

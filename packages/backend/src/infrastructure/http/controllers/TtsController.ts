@@ -3,12 +3,15 @@ import { SynthesizeSpeech } from "../../../core/use-cases/SynthesizeSpeech";
 import { GoogleTtsService } from "../../google-tts/GoogleTtsService";
 import { EdgeTtsService } from "../../edge-tts/EdgeTtsService";
 import { GeminiTtsService } from "../../gemini-tts/GeminiTtsService";
+import { AzureTtsService } from "../../azure-tts/AzureTtsService";
 import { CompositeTtsService } from "../../CompositeTtsService";
 
 const googleService = new GoogleTtsService();
 const edgeService = new EdgeTtsService();
 const geminiService = new GeminiTtsService();
+const azureService = new AzureTtsService();
 const ttsService = new CompositeTtsService([
+  azureService,
   edgeService,
   googleService,
   geminiService,

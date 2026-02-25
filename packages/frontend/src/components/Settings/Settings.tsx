@@ -1,6 +1,7 @@
 import React from "react";
 import { useReader } from "../../context/ReaderContext";
 import { useSpeechSynthesis } from "../../hooks/useSpeechSynthesis";
+import { ChevronDown } from "lucide-react";
 import styles from "./Settings.module.css";
 
 interface SettingsProps {
@@ -27,18 +28,48 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         </div>
 
         <div className={styles.group}>
-          <label className={styles.label}>Voz da Narração</label>
-          <select
-            className={styles.select}
-            value={settings.voiceURI || ""}
-            onChange={(e) => updateSettings({ voiceURI: e.target.value })}
-          >
-            {voices.map((voice) => (
-              <option key={voice.voiceURI} value={voice.voiceURI}>
-                {voice.name} ({voice.lang})
-              </option>
-            ))}
-          </select>
+          <label className={styles.label}>Voz da narração</label>
+          <div className={styles.selectWrapper}>
+            <select
+              className={styles.select}
+              value={settings.voiceURI || ""}
+              onChange={(e) => updateSettings({ voiceURI: e.target.value })}
+            >
+              {Object.entries(
+                voices.reduce(
+                  (acc, voice) => {
+                    const provider = voice.provider || "other";
+                    if (!acc[provider]) acc[provider] = [];
+                    acc[provider].push(voice);
+                    return acc;
+                  },
+                  {} as Record<string, typeof voices>,
+                ),
+              ).map(([provider, providerVoices]) => (
+                <optgroup
+                  key={provider}
+                  label={
+                    provider === "google"
+                      ? "Google Cloud"
+                      : provider === "edge"
+                        ? "Microsoft Edge (Free)"
+                        : provider === "azure"
+                          ? "Microsoft Azure"
+                          : provider === "gemini"
+                            ? "Google Gemini"
+                            : provider
+                  }
+                >
+                  {providerVoices.map((voice) => (
+                    <option key={voice.voiceURI} value={voice.voiceURI}>
+                      {voice.name} ({voice.lang})
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <ChevronDown size={18} className={styles.dropdownArrow} />
+          </div>
         </div>
 
         <div className={styles.group}>
