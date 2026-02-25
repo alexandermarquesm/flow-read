@@ -165,15 +165,17 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     // Sync text back to the book object so it persists
     // ONLY if we have initialized the text (prevents wiping text on mount)
     if (activeBookId && isTextInitialized) {
-      setBooks((prevBooks) =>
-        prevBooks.map((b) => {
-          // Only update if changes to avoid needless renders
+      setBooks((prevBooks) => {
+        let changed = false;
+        const newBooks = prevBooks.map((b) => {
           if (b.id === activeBookId && b.text !== text) {
+            changed = true;
             return { ...b, text };
           }
           return b;
-        }),
-      );
+        });
+        return changed ? newBooks : prevBooks;
+      });
     }
   }, [text, activeBookId, isTextInitialized]);
 
@@ -223,18 +225,26 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
   // Update book progress when index changes
   useEffect(() => {
     if (activeBookId) {
-      setBooks((prevBooks) =>
-        prevBooks.map((b) => {
+      setBooks((prevBooks) => {
+        let changed = false;
+        const newBooks = prevBooks.map((b) => {
           if (b.id === activeBookId) {
             const progress =
               segments.length > 0
                 ? Math.round((currentSegmentIndex / segments.length) * 100)
                 : 0;
-            return { ...b, currentSegmentIndex, progress };
+            if (
+              b.currentSegmentIndex !== currentSegmentIndex ||
+              b.progress !== progress
+            ) {
+              changed = true;
+              return { ...b, currentSegmentIndex, progress };
+            }
           }
           return b;
-        }),
-      );
+        });
+        return changed ? newBooks : prevBooks;
+      });
     }
   }, [currentSegmentIndex, activeBookId, segments.length]);
 
