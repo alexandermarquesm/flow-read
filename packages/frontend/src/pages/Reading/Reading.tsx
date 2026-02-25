@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -184,39 +184,71 @@ export const Reading = () => {
   const [direction, setDirection] = useState(0);
 
   // Handle Manual Page Turn (UI Only)
-  const handlePageTurn = (moveDirection: "next" | "prev") => {
-    let targetPage = currentPage;
-    if (moveDirection === "next") {
-      if (currentPage < totalPages) {
-        setDirection(1);
-        targetPage = currentPage + 1;
-        setCurrentPage(targetPage);
-      }
-    } else {
-      if (currentPage > 1) {
-        setDirection(-1);
-        targetPage = currentPage - 1;
-        setCurrentPage(targetPage);
-      }
-    }
-
-    if (targetPage !== currentPage && activeBookId && segments.length > 0) {
-      // Sync audio position to the top of the newly turned page
-      const pageStartWord = (targetPage - 1) * WORDS_PER_PAGE;
-      let wordCount = 0;
-      let targetIndex = 0;
-      for (let i = 0; i < segments.length; i++) {
-        const w = segments[i].text.trim().split(/\s+/).length;
-        if (wordCount + w > pageStartWord) {
-          targetIndex = i;
-          break;
+  const handlePageTurn = useCallback(
+    (moveDirection: "next" | "prev") => {
+      let targetPage = currentPage;
+      if (moveDirection === "next") {
+        if (currentPage < totalPages) {
+          setDirection(1);
+          targetPage = currentPage + 1;
+          setCurrentPage(targetPage);
         }
-        wordCount += w;
+      } else {
+        if (currentPage > 1) {
+          setDirection(-1);
+          targetPage = currentPage - 1;
+          setCurrentPage(targetPage);
+        }
       }
-      setCurrentSegmentIndex(targetIndex);
-      updateBookProgress(activeBookId, targetIndex);
-    }
-  };
+
+      if (targetPage !== currentPage && activeBookId && segments.length > 0) {
+        // Sync audio position to the top of the newly turned page
+        const pageStartWord = (targetPage - 1) * WORDS_PER_PAGE;
+        let wordCount = 0;
+        let targetIndex = 0;
+        for (let i = 0; i < segments.length; i++) {
+          const w = segments[i].text.trim().split(/\s+/).length;
+          if (wordCount + w > pageStartWord) {
+            targetIndex = i;
+            break;
+          }
+          wordCount += w;
+        }
+        setCurrentSegmentIndex(targetIndex);
+        updateBookProgress(activeBookId, targetIndex);
+      }
+    },
+    [
+      currentPage,
+      totalPages,
+      activeBookId,
+      segments,
+      setCurrentSegmentIndex,
+      updateBookProgress,
+    ],
+  );
+
+  // Keyboard Navigation Support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent flipping pages if the user is typing in an input/textarea somewhere
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      if (e.key === "ArrowRight") {
+        handlePageTurn("next");
+      } else if (e.key === "ArrowLeft") {
+        handlePageTurn("prev");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handlePageTurn]);
 
   // Swipe support for mobile
   const touchStartX = useRef<number | null>(null);
