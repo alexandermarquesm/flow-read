@@ -8,10 +8,11 @@ import {
   ChevronRight,
   ChevronLeft,
   BookOpen,
-  Share2,
   Maximize,
   MoreVertical,
   PanelLeftOpen,
+  List,
+  X,
 } from "lucide-react";
 import { useReader } from "../../context/ReaderContext";
 import { Settings } from "../../components/Settings/Settings";
@@ -54,6 +55,7 @@ export const Reading = () => {
   }
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isTocOpen, setIsTocOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const activeRef = useRef<HTMLElement>(null);
   const textColumnRef = useRef<HTMLDivElement>(null);
@@ -119,42 +121,7 @@ export const Reading = () => {
     }
   }, [currentSegmentIndex, isPlaying, segments, currentPage]);
 
-  // 5. Persist Page Change to Book Progress (Decoupled Side Effect)
-  useEffect(() => {
-    if (
-      !isInitialLoad.current &&
-      !isPlaying &&
-      activeBookId &&
-      segments.length > 0
-    ) {
-      // Find start segment of current page
-      const pageStartWord = (currentPage - 1) * WORDS_PER_PAGE;
-      let wordCount = 0;
-      let targetIndex = 0;
-
-      // Find segment that contains the start word
-      for (let i = 0; i < segments.length; i++) {
-        const w = segments[i].text.trim().split(/\s+/).length;
-        if (wordCount + w > pageStartWord) {
-          targetIndex = i;
-          break;
-        }
-        wordCount += w;
-      }
-
-      // Prevent render loops: ONLY update if the index actually drifted
-      if (targetIndex !== currentBook.currentSegmentIndex) {
-        updateBookProgress(activeBookId, targetIndex);
-      }
-    }
-  }, [
-    currentPage,
-    isPlaying,
-    segments,
-    activeBookId,
-    currentBook.currentSegmentIndex,
-    updateBookProgress,
-  ]); // Safe from loops due to targetIndex guard
+  // 5. Removed Redundant Persist effect to avoid infinite loops
 
   // 6. Get Visible Segments for Current Page
   const visibleSegments = useMemo(() => {
@@ -283,6 +250,20 @@ export const Reading = () => {
     }
   }, [currentPage]);
 
+  // Auto-scroll to active segment
+  useEffect(() => {
+    if (
+      (isPlaying || !isPaused) &&
+      activeRef.current &&
+      textColumnRef.current
+    ) {
+      activeRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [currentSegmentIndex, isPlaying, isPaused]);
+
   // Animation Variants
   const variants = {
     enter: (direction: number) => ({
@@ -305,6 +286,51 @@ export const Reading = () => {
       width: "100%",
     }),
   };
+
+  // --- CHAPTER TRACKING ---
+  const currentChapter = useMemo(() => {
+    if (!currentBook?.chapters || !segments[currentSegmentIndex]) return null;
+    const currentStartChar = segments[currentSegmentIndex].startChar;
+
+    let activeChapter = currentBook.chapters[0];
+    for (const ch of currentBook.chapters) {
+      if (ch.startChar <= currentStartChar) {
+        activeChapter = ch;
+      } else {
+        break;
+      }
+    }
+    return activeChapter;
+  }, [currentBook?.chapters, segments, currentSegmentIndex]);
+
+  // --- NAVIGATION HELPERS ---
+  const handleJumpToChapter = useCallback(
+    (startChar: number) => {
+      if (!segments.length || !activeBookId) return;
+
+      const targetIndex = segments.findIndex((s) => s.startChar >= startChar);
+      if (targetIndex !== -1) {
+        setCurrentSegmentIndex(targetIndex);
+        updateBookProgress(activeBookId, targetIndex);
+
+        // Calculate Page
+        let wordPos = 0;
+        for (let i = 0; i < targetIndex; i++) {
+          wordPos += segments[i].text.trim().split(/\s+/).length;
+        }
+        const targetPage = Math.floor(wordPos / WORDS_PER_PAGE) + 1;
+        setCurrentPage(targetPage);
+        setIsTocOpen(false);
+      }
+    },
+    [
+      segments,
+      activeBookId,
+      setCurrentSegmentIndex,
+      updateBookProgress,
+      WORDS_PER_PAGE,
+    ],
+  );
 
   return (
     <div className={styles.container}>
@@ -358,9 +384,11 @@ export const Reading = () => {
               {currentBook.title || "Untitled Book"}
             </h1>
             <p className={styles.chapterSubtitle}>
-              {currentBook.author
-                ? `BY ${currentBook.author.toUpperCase()}`
-                : "UNKNOWN AUTHOR"}
+              {currentChapter?.title
+                ? currentChapter.title.toUpperCase()
+                : currentBook.author
+                  ? `BY ${currentBook.author.toUpperCase()}`
+                  : "UNKNOWN AUTHOR"}
             </p>
           </div>
 
@@ -517,8 +545,12 @@ export const Reading = () => {
                   )}
                 </button>
 
-                <button className={styles.iconButton} title="Share">
-                  <Share2 size={18} />
+                <button
+                  className={styles.iconButton}
+                  title="Summary"
+                  onClick={() => setIsTocOpen(true)}
+                >
+                  <List size={18} />
                 </button>
                 <button className={styles.iconButton} title="Options">
                   <MoreVertical size={18} />
@@ -540,6 +572,47 @@ export const Reading = () => {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
+
+      {/* TABLE OF CONTENTS MODAL */}
+      <AnimatePresence>
+        {isTocOpen && (
+          <div
+            className={styles.tocOverlay}
+            onClick={() => setIsTocOpen(false)}
+          >
+            <motion.div
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              className={styles.tocContent}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.tocHeader}>
+                <h3>Contents</h3>
+                <button onClick={() => setIsTocOpen(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className={styles.tocList}>
+                {currentBook.chapters?.map((ch: any, idx: number) => {
+                  const isActive = currentChapter?.index === idx;
+                  return (
+                    <div
+                      key={idx}
+                      className={`${styles.tocItem} ${isActive ? styles.tocItemActive : ""}`}
+                      onClick={() => handleJumpToChapter(ch.startChar || 0)}
+                    >
+                      <div className={styles.tocItemTitle}>{ch.title}</div>
+                      {isActive && <div className={styles.tocActiveDot} />}
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
