@@ -2,6 +2,7 @@
 import { log, LOG_PREFIX } from "@flow-read/shared";
 import { GetWelcomeMessageUseCase } from "../../core/use-cases/GetWelcomeMessage";
 import { TtsController } from "./controllers/TtsController";
+import { DiscoveryController } from "./controllers/DiscoveryController";
 import { config } from "../../config/config";
 
 const PORT = config.port;
@@ -11,6 +12,7 @@ log(`Starting backend server in ${ENV} mode on port ${PORT}`);
 
 const getWelcomeMessageUseCase = new GetWelcomeMessageUseCase();
 const ttsController = new TtsController();
+const discoveryController = new DiscoveryController();
 
 Bun.serve({
   port: PORT,
@@ -57,6 +59,23 @@ Bun.serve({
 
     if (url.pathname === "/api/synthesize" && req.method === "POST") {
       const response = await ttsController.synthesize(req);
+      Object.entries(corsHeaders).forEach(([k, v]) => {
+        response.headers.set(k, v);
+      });
+      return response;
+    }
+
+    // Discovery Routes
+    if (url.pathname === "/api/discovery/search" && req.method === "GET") {
+      const response = await discoveryController.search(req);
+      Object.entries(corsHeaders).forEach(([k, v]) => {
+        response.headers.set(k, v);
+      });
+      return response;
+    }
+
+    if (url.pathname === "/api/discovery/download" && req.method === "GET") {
+      const response = await discoveryController.download(req);
       Object.entries(corsHeaders).forEach(([k, v]) => {
         response.headers.set(k, v);
       });
