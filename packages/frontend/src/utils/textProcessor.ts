@@ -10,45 +10,39 @@ export interface TextSegment {
  * Uses punctuation to define natural pauses and boundaries.
  */
 export const processText = (text: string): TextSegment[] => {
-  const segments: TextSegment[] = [];
-  // Regex to split by sentences or major punctuation, keeping the delimiter
-  // This is a simplified approach; for more complex texts, a more robust parser might be needed.
-  // We match sentences ending in . ? ! or newlines.
-  const regex = /([^.?!]+[.?!]+)|([^.?!]+$)/gm;
-
-  let accumulatedIndex = 0;
-
-  // If text is empty, return empty array
   if (!text) return [];
 
-  const sentences = text.match(regex);
-  if (!sentences) {
-    // Fallback if regex fails (unlikely for non-empty text based on the pattern)
-    return [
-      {
-        id: "seg-0",
-        text: text,
-        startChar: 0,
-        endChar: text.length,
-      },
-    ];
-  }
+  const segments: TextSegment[] = [];
+  let accumulatedIndex = 0;
 
-  sentences.forEach((sentence, index) => {
-    // We match sentences ending in . ? ! or newlines.
-    // To map perfectly to `onboundary` charIndex, we need the exact position in the original string.
+  // 1. Split by paragraphs first to preserve structure
+  const paragraphs = text.split(/(\n\s*\n)/);
 
-    const start = text.indexOf(sentence, accumulatedIndex);
-    const end = start + sentence.length;
+  paragraphs.forEach((part) => {
+    if (/^\s*$/.test(part)) {
+      // It's just whitespace/newlines between paragraphs
+      accumulatedIndex += part.length;
+      return;
+    }
 
-    segments.push({
-      id: `seg-${index}`,
-      text: sentence,
-      startChar: start,
-      endChar: end,
-    });
+    // 2. Split each paragraph into sentences
+    const sentenceRegex = /([^.?!]+[.?!]+)|([^.?!]+$)/g;
+    let match;
 
-    accumulatedIndex = end;
+    while ((match = sentenceRegex.exec(part)) !== null) {
+      const sentence = match[0];
+      const start = text.indexOf(sentence, accumulatedIndex);
+
+      if (start !== -1) {
+        segments.push({
+          id: `seg-${segments.length}`,
+          text: sentence,
+          startChar: start,
+          endChar: start + sentence.length,
+        });
+        accumulatedIndex = start + sentence.length;
+      }
+    }
   });
 
   return segments;
