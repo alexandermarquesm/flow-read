@@ -24,6 +24,7 @@ export interface Book {
   // Extended Metadata
   publicationDate?: string;
   genre?: string;
+  chapters?: { title: string; startChar: number; index: number }[];
 }
 
 interface ReaderContextType {
@@ -62,6 +63,7 @@ interface ReaderContextType {
     metadata?: {
       publicationDate?: string;
       genre?: string;
+      chapters?: { title: string; startChar: number; index: number }[];
     },
   ) => void;
   updateBook: (
@@ -70,6 +72,7 @@ interface ReaderContextType {
   ) => void;
   selectBook: (bookId: string) => void;
   updateBookProgress: (bookId: string, segmentIndex: number) => void;
+  removeBook: (bookId: string) => void;
   showToast: (message: string) => void;
 }
 
@@ -145,18 +148,16 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
   // Track if we have initialized text from the active book to prevent overwrites
   const [isTextInitialized, setIsTextInitialized] = useState(false);
 
-  // Load Book into active state when activeBookId changes
+  // Load Book into active state ONLY when activeBookId changes
   useEffect(() => {
+    if (!activeBookId) return;
     const book = books.find((b) => b.id === activeBookId);
     if (book) {
       setTextInternal(book.text);
       setCurrentSegmentIndex(book.currentSegmentIndex);
       setIsTextInitialized(true);
-    } else if (books.length > 0) {
-      // If no active book but books exist, maybe select first?
-      // For now, leave empty if ID matches nothing.
     }
-  }, [activeBookId, books]);
+  }, [activeBookId]); // DO NOT depend on 'books' here to avoid loops
 
   // Process text when it changes and sync to book
   useEffect(() => {
@@ -323,6 +324,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     metadata?: {
       publicationDate?: string;
       genre?: string;
+      chapters?: { title: string; startChar: number; index: number }[];
     },
   ) => {
     const newBook: Book = {
@@ -367,11 +369,25 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const updateBookProgress = (bookId: string, segmentIndex: number) => {
+    // Update local context state first
+    if (bookId === activeBookId) {
+      setCurrentSegmentIndex(segmentIndex);
+    }
+
+    // Then update books library
     setBooks((prev) =>
       prev.map((b) =>
         b.id === bookId ? { ...b, currentSegmentIndex: segmentIndex } : b,
       ),
     );
+  };
+
+  const removeBook = (bookId: string) => {
+    if (bookId === activeBookId) {
+      setActiveBookId(null);
+      setTextInternal("");
+    }
+    setBooks((prev) => prev.filter((b) => b.id !== bookId));
   };
 
   // Toast Notification State
@@ -409,6 +425,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
         updateBook,
         selectBook,
         updateBookProgress,
+        removeBook,
         // Utils
         showToast,
       }}
