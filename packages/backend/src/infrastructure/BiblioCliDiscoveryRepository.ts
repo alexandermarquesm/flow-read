@@ -21,4 +21,10 @@ export class BiblioCliDiscoveryRepository implements IDiscoveryRepository {
     if (!response.ok) throw new Error("Failed to download from BiblioCLI");
     return await response.json();
   }
+
+  async getPopularBooks(): Promise<DiscoveryBook[]> {
+    const response = await fetch(`${this.baseUrl}/popular`);
+    if (!response.ok) throw new Error("Failed to fetch popular books from BiblioCLI");
+    return (await response.json()) as DiscoveryBook[];
+  }
 }

@@ -46,12 +46,21 @@
   width: 100%;
   flex-direction: column;
   gap: 1.5rem;
-  text-align: center; /* Center text */
+  text-align: left;
+}
+
+.heroHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 0.2rem;
 }
 
 .waveDecoration {
-  margin: 0.5rem 0 1rem 0; /* Add space around the wave */
-  opacity: 0.7;
+  margin: 1rem 0;
+  opacity: 0.5;
+  align-self: flex-start;
 }
 
 .heroImageContainer {
@@ -69,20 +78,23 @@
 
 .heroTitle {
   font-family: var(--font-heading);
-  font-size: 4rem; /* Significantly larger */
-  line-height: 1;
+  font-size: 3.5rem;
+  line-height: 1.1;
   color: #5d4037;
   margin: 0;
-  width: 300px;
+  text-align: left;
 }
 
-.heroTitle em {
-  display: inline-block; /* Inline for flow */
-  font-style: italic;
-  font-weight: 400;
-  font-size: 4.5rem;
+.heroAuthor {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
   color: #8d6e63;
-  margin-left: 0.5rem;
+  margin: 0.5rem 0 0 0;
+  font-weight: 700;
+  text-align: left;
+  opacity: 0.8;
 }
 
 .heroSubtitle {
@@ -448,4 +460,46 @@
     justify-content: center;
     gap: 1.5rem;
   }
+}
+
+/* Loading & Animations */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingState {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 2rem;
+  color: #8d6e63;
+}
+
+.cardOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(93, 64, 55, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  z-index: 2;
+}
+
+.downloading {
+  opacity: 0.8;
+  pointer-events: none;
 }

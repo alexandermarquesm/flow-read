@@ -1,12 +1,32 @@
 import { SearchDiscoveryBooks } from "../../../core/use-cases/SearchDiscoveryBooks";
 import { DownloadAndFormatBook } from "../../../core/use-cases/DownloadAndFormatBook";
+import { GetPopularBooks } from "../../../core/use-cases/GetPopularBooks";
 import { BiblioCliDiscoveryRepository } from "../../BiblioCliDiscoveryRepository";
 
 const discoveryRepo = new BiblioCliDiscoveryRepository();
 const searchUseCase = new SearchDiscoveryBooks(discoveryRepo);
 const downloadUseCase = new DownloadAndFormatBook(discoveryRepo);
+const popularUseCase = new GetPopularBooks(discoveryRepo);
 
 export class DiscoveryController {
+  async popular(req: Request): Promise<Response> {
+    try {
+      const results = await popularUseCase.execute();
+      return new Response(JSON.stringify(results), {
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      console.error("Discovery Popular Error:", error);
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch popular books" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+  }
+
   async search(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const query = url.searchParams.get("query");

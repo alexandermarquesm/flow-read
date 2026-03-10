@@ -65,12 +65,12 @@ interface ReaderContextType {
       genre?: string;
       chapters?: { title: string; startChar: number; index: number }[];
     },
-  ) => void;
+  ) => Book;
   updateBook: (
     bookId: string,
     updates: Partial<Omit<Book, "id" | "progress" | "currentSegmentIndex">>,
   ) => void;
-  selectBook: (bookId: string) => void;
+  selectBook: (bookId: string, providedBook?: Book) => void;
   updateBookProgress: (bookId: string, segmentIndex: number) => void;
   removeBook: (bookId: string) => void;
   showToast: (message: string) => void;
@@ -150,14 +150,21 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Load Book into active state ONLY when activeBookId changes
   useEffect(() => {
-    if (!activeBookId) return;
+    if (!activeBookId) {
+      setIsTextInitialized(false);
+      return;
+    }
+
     const book = books.find((b) => b.id === activeBookId);
     if (book) {
       setTextInternal(book.text);
       setCurrentSegmentIndex(book.currentSegmentIndex);
       setIsTextInitialized(true);
+    } else {
+      // If we don't find it yet, we stay uninitialized to avoid wiping data
+      setIsTextInitialized(false);
     }
-  }, [activeBookId]); // DO NOT depend on 'books' here to avoid loops
+  }, [activeBookId, books.length]); // Addition: books.length helps if book was just added
 
   // Process text when it changes and sync to book
   useEffect(() => {
@@ -338,17 +345,22 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
       ...metadata,
     };
     setBooks((prev) => [...prev, newBook]);
+    return newBook;
   };
 
-  const selectBook = (bookId: string) => {
+  const selectBook = (bookId: string, providedBook?: Book) => {
     stop(); // Stop current playback
 
-    // Force reload text from book to ensure latest edits are applied
-    // This handles the case where we navigate from Library after editing
-    const book = books.find((b) => b.id === bookId);
+    // If we have the book object directly (e.g. just downloaded), use it immediately
+    const book = providedBook || books.find((b) => b.id === bookId);
+    
     if (book) {
+      // Set text immediately to avoid delay or sync issues
       setTextInternal(book.text);
       setCurrentSegmentIndex(book.currentSegmentIndex);
+      setIsTextInitialized(true);
+    } else {
+      setIsTextInitialized(false);
     }
 
     setActiveBookId(bookId);

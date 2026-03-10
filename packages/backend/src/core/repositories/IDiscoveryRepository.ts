@@ -11,4 +11,5 @@ export interface DiscoveryBook {
 export interface IDiscoveryRepository {
   search(query: string): Promise<DiscoveryBook[]>;
   downloadAndFormat(url: string): Promise<any>;
+  getPopularBooks(): Promise<DiscoveryBook[]>;
 }

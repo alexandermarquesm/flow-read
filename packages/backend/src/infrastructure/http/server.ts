@@ -66,6 +66,14 @@ Bun.serve({
     }
 
     // Discovery Routes
+    if (url.pathname === "/api/discovery/popular" && req.method === "GET") {
+      const response = await discoveryController.popular(req);
+      Object.entries(corsHeaders).forEach(([k, v]) => {
+        response.headers.set(k, v);
+      });
+      return response;
+    }
+
     if (url.pathname === "/api/discovery/search" && req.method === "GET") {
       const response = await discoveryController.search(req);
       Object.entries(corsHeaders).forEach(([k, v]) => {
