@@ -178,6 +178,43 @@
     0 15px 25px rgba(0, 0, 0, 0.15);
 }
 
+/* Status Ribbon */
+.statusRibbon {
+  position: absolute;
+  top: 0;
+  right: 10px;
+  width: 32px;
+  padding-top: 6px;
+  padding-bottom: 12px;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  font-family: var(--font-ui);
+  text-align: center;
+  z-index: 10;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  /* The magic to make the bottom pointy like a bookmark */
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%);
+  transition: transform 0.3s ease;
+}
+
+.bookItem:hover .statusRibbon {
+  transform: translateY(-3px);
+}
+
+.ribbonRead {
+  background-color: #d32f2f; /* Deep Red for Finished */
+}
+
+.ribbonReading {
+  background-color: var(--color-brand-sage); /* Sage Green for Reading */
+}
+
+.ribbonUnread {
+  background-color: rgba(93, 64, 55, 0.6); /* Subtle brown/grey for Unread */
+  backdrop-filter: blur(2px);
+}
+
 .coverImage {
   width: 100%;
   height: 100%;
@@ -440,24 +477,13 @@
   justify-content: flex-end;
 }
 
-.submitBtn {
-  background: #7da38b;
-  color: white;
-  padding: 0.8rem 2rem;
-  border-radius: 50px;
-  font-size: 1rem;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-}
-
 /* Discovery / Nexus Search Styles */
 .nexusToggle {
   display: flex;
   background-color: #f1ede8;
   padding: 0.25rem;
   border-radius: 50px;
-  margin-right: 1.5rem;
+  margin-right: 0.75rem;
 }
 
 .nexusToggleBtn {
@@ -480,6 +506,15 @@
 
 .discoverySection {
   margin-top: 2rem;
+}
+
+.discoveryTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-heading);
+  color: #5d4037;
+  margin-bottom: 1.5rem;
 }
 
 .resultsGrid {
@@ -596,37 +631,6 @@
   font-weight: 500;
 }
 
-.downloadBtn {
-  background-color: #5d4037;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.downloadBtn:hover:not(:disabled) {
-  background-color: #3e2723;
-  transform: translateY(-1px);
-}
-
-.downloadBtn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.downloadBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .loadingSpinner {
   width: 1rem;
   height: 1rem;
@@ -634,12 +638,6 @@
   border-radius: 50%;
   border-top-color: white;
   animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .emptyDiscovery {
@@ -665,15 +663,54 @@
   border-left: 4px solid #d32f2f;
 }
 
-.spin {
-  animation: spin 1s linear infinite;
+/* Unified animation using rotate for better compatibility */
+@keyframes spin {
+  from {
+    transform: translateY(var(--tw-translate-y, 0%)) rotate(0deg);
+  }
+  to {
+    transform: translateY(var(--tw-translate-y, 0%)) rotate(360deg);
+  }
 }
 
-.loadingSpinnerIcon {
+/* Specific spin for absolute centered elements */
+@keyframes spinCentered {
+  from {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+.nexusSpinnerSmall {
   position: absolute;
   right: 1rem;
   top: 50%;
-  transform: translateY(-50%);
-  color: #5d4037;
-  animation: spin 1s linear infinite;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(93, 64, 55, 0.15);
+  border-radius: 50%;
+  border-top-color: #5d4037;
+  animation: spinCentered 0.8s linear infinite;
+  box-sizing: border-box;
+}
+
+.nexusSpinnerLarge {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(93, 64, 55, 0.15);
+  border-radius: 50%;
+  border-top-color: #5d4037;
+  animation: spin 0.8s linear infinite;
+  box-sizing: border-box;
+}
+
+.loadingSpinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
 }

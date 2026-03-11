@@ -34,7 +34,7 @@
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  color: #7da38b; /* Sage Green */
+  color: var(--color-brand-sage); /* Sage Green */
   transition: all 0.2s;
   opacity: 0;
   pointer-events: none;
@@ -48,7 +48,7 @@
 }
 
 .sidebarToggleBtn:hover {
-  background: #7da38b; /* Sage Green */
+  background: var(--color-brand-sage); /* Sage Green */
   color: white;
 }
 
@@ -81,7 +81,7 @@
 
 .actionButton,
 .iconButton {
-  color: #7da38b;
+  color: var(--color-brand-sage);
   background: transparent;
   border: none;
   cursor: pointer;

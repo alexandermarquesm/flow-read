@@ -47,6 +47,7 @@
   flex-direction: column;
   gap: 1.5rem;
   text-align: left;
+  align-items: flex-start; /* Prevents buttons from stretching */
 }
 
 .heroHeader {
@@ -103,31 +104,6 @@
   line-height: 1.4;
 }
 
-/* Button */
-.ctaButton {
-  background-color: #7da38b;
-  color: white;
-  padding: 0.7rem 1.8rem;
-  border-radius: 50px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(125, 163, 139, 0.4);
-  transition:
-    transform 0.2s,
-    background-color 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  max-width: 250px;
-}
-
-.ctaButton:hover {
-  background-color: #6b8f78;
-  transform: translateY(-2px);
-}
-
 /* RIGHT: Reading Card */
 .currentSection {
   /* Let it take just enough space */
@@ -177,6 +153,14 @@
   transition: transform 0.3s;
   transform-origin: center center;
   filter: sepia(0.1); /* Slight warm tone */
+}
+
+/* Specific override for actual book covers */
+.bookCoverImage {
+  filter: none !important;
+  object-fit: cover !important; /* Premium edge-to-edge feel */
+  object-position: top center; /* Ensure title/top of book is always visible */
+  background-color: transparent;
 }
 
 .currentCard:hover .cardImageContainer img {
@@ -255,28 +239,6 @@
   margin-top: 1rem;
   text-align: center;
   font-style: italic;
-}
-
-.cardButton {
-  margin-top: 1.25rem;
-  background-color: #7da38b; /* Sage Green */
-  color: #fff;
-  border: none;
-  padding: 0.6rem 1rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  width: 100%;
-  box-shadow: 0 4px 12px rgba(125, 163, 139, 0.4);
-}
-
-.cardButton:hover {
-  background-color: #6b8f78;
-  transform: translateY(-1px);
 }
 
 /* BOTTOM: New Arrivals (N) - Full Width */

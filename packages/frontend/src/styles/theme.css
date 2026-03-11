@@ -11,6 +11,9 @@
   --color-border: #ece0d1;
   --color-hover: #f5efe6;
   --color-active: #ece0d1;
+  --color-brand-sage: #7da38b;
+  --color-brand-sage-hover: #6b8f78;
+  --color-brand-sage-shadow: rgba(125, 163, 139, 0.4);
 
   /* Spacing & Radius */
   --radius-sm: 4px;
