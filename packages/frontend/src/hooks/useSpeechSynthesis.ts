@@ -223,15 +223,15 @@ export const useSpeechSynthesis = ({
 
         // Synchronization logic
         let requestAnimationFrameId: number;
+        let lastReportedIndex = -1; // Throttle state updates!
         let runningCharIndex = 0;
 
         // Pre-calculate char indices for marks
         const processedMarks = marks.map((m: any) => {
-          // Backend now provides exact charStartIndex
           if (typeof m.charStartIndex === "number") {
             return m;
           }
-          // Fallback for legacy or if missing
+          // Fallback shouldn't usually hit if backend is correct
           const startIdx = runningCharIndex;
           runningCharIndex += m.part.length;
           return { ...m, charStartIndex: startIdx };
@@ -256,18 +256,25 @@ export const useSpeechSynthesis = ({
           if (currentMark && onBoundary) {
             const leadingSpaceMatch = currentMark.part.match(/^\s+/);
             const offset = leadingSpaceMatch ? leadingSpaceMatch[0].length : 0;
-            onBoundary(startIndex + currentMark.charStartIndex + offset);
+            const newIndex = currentMark.charStartIndex + offset;
+            
+            // 🔥 CRITICAL FIX: Only dispatch a React state update if the index actually moves to a new word!
+            // Without this, we send 60 state updates per second to React, which blocks the UI from painting until paused!
+            if (newIndex !== lastReportedIndex) {
+              lastReportedIndex = newIndex;
+              onBoundary(newIndex);
+            }
           }
 
           requestAnimationFrameId = requestAnimationFrame(syncLoop);
         };
 
         audio.onplay = () => {
-          // Double check in case of very fast race
           if (requestId !== requestRef.current) {
             audio.pause();
             return;
           }
+          lastReportedIndex = -1; // reset on play/resume
           syncLoop();
         };
 

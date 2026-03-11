@@ -103,16 +103,13 @@ export const Reading = () => {
         wordPos += segments[i].text.trim().split(/\s+/).length;
       }
 
-      const segmentWordCount =
-        segments[currentSegmentIndex]?.text.trim().split(/\s+/).length || 0;
       const segmentStart = wordPos;
-      const segmentEnd = wordPos + segmentWordCount;
 
       const pageStartWord = (currentPage - 1) * WORDS_PER_PAGE;
       const pageEndWord = currentPage * WORDS_PER_PAGE;
 
       const isVisibleContent =
-        segmentStart < pageEndWord && segmentEnd > pageStartWord;
+        segmentStart >= pageStartWord && segmentStart < pageEndWord;
 
       if (!isVisibleContent) {
         const readingPage = Math.floor(wordPos / WORDS_PER_PAGE) + 1;
@@ -134,9 +131,8 @@ export const Reading = () => {
     for (const segment of segments) {
       const segmentWordCount = segment.text.trim().split(/\s+/).length;
       const segmentStart = currentWordCount;
-      const segmentEnd = currentWordCount + segmentWordCount;
 
-      if (segmentStart < pageEndWord && segmentEnd > pageStartWord) {
+      if (segmentStart >= pageStartWord && segmentStart < pageEndWord) {
         pageSegments.push(segment);
       }
       currentWordCount += segmentWordCount;
@@ -176,7 +172,7 @@ export const Reading = () => {
         let targetIndex = 0;
         for (let i = 0; i < segments.length; i++) {
           const w = segments[i].text.trim().split(/\s+/).length;
-          if (wordCount + w > pageStartWord) {
+          if (wordCount >= pageStartWord) {
             targetIndex = i;
             break;
           }

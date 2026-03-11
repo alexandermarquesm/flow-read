@@ -10,7 +10,7 @@ import {
   useSpeechSynthesis,
   type SpeechSettings,
 } from "../hooks/useSpeechSynthesis";
-import { processText, type TextSegment } from "../utils/textProcessor";
+import { processTextAsync, type TextSegment } from "../utils/textProcessor";
 import { Toast } from "../components/Toast/Toast";
 
 export interface Book {
@@ -41,6 +41,7 @@ interface ReaderContextType {
   isPlaying: boolean;
   isPaused: boolean;
   isSynthesizing: boolean;
+  isProcessingText?: boolean;
   play: () => void;
   pause: () => void;
   resume: () => void;
@@ -73,7 +74,7 @@ interface ReaderContextType {
   selectBook: (bookId: string, providedBook?: Book) => void;
   updateBookProgress: (bookId: string, segmentIndex: number) => void;
   removeBook: (bookId: string) => void;
-  showToast: (message: string) => void;
+  showToast: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
 
 const ReaderContext = createContext<ReaderContextType | undefined>(undefined);
@@ -111,12 +112,19 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     return saved || null;
   });
 
-  // Persist Books
+  // 1. Persist Books with DEBOUNCE and error handling
   useEffect(() => {
-    localStorage.setItem("flow-read-books", JSON.stringify(books));
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem("flow-read-books", JSON.stringify(books));
+      } catch (e) {
+        console.error("Persistence Error:", e);
+      }
+    }, 1000); // Wait 1s of stability before saving
+    return () => clearTimeout(timer);
   }, [books]);
 
-  // Persist Active Book ID
+  // 2. Persist Active Book ID with higher priority
   useEffect(() => {
     if (activeBookId) {
       localStorage.setItem("flow-read-active-book", activeBookId);
@@ -148,45 +156,101 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
   // Track if we have initialized text from the active book to prevent overwrites
   const [isTextInitialized, setIsTextInitialized] = useState(false);
 
+  // References to avoid effect loops
+  const booksRef = useRef(books);
+  useEffect(() => {
+    booksRef.current = books;
+  }, [books]);
+
   // Load Book into active state ONLY when activeBookId changes
+  // We use a separate effect for the initial load and when the ID explicitly changes
   useEffect(() => {
     if (!activeBookId) {
       setIsTextInitialized(false);
+      setTextInternal("");
       return;
     }
 
-    const book = books.find((b) => b.id === activeBookId);
-    if (book) {
-      setTextInternal(book.text);
-      setCurrentSegmentIndex(book.currentSegmentIndex);
+    const currentBook = booksRef.current.find((b) => b.id === activeBookId);
+    if (currentBook) {
+      // Use functional updates to ensure we have latest state but don't depend on it in the array
+      setTextInternal(currentBook.text);
+      setCurrentSegmentIndex(currentBook.currentSegmentIndex);
       setIsTextInitialized(true);
-    } else {
-      // If we don't find it yet, we stay uninitialized to avoid wiping data
-      setIsTextInitialized(false);
     }
-  }, [activeBookId, books.length]); // Addition: books.length helps if book was just added
+  }, [activeBookId]); // ONLY depend on ID change
 
-  // Process text when it changes and sync to book
+  const [isProcessingText, setIsProcessingText] = useState(false);
+
+  // Process text when it changes
   useEffect(() => {
-    const processed = processText(text);
-    setSegments(processed);
+    let active = true;
 
-    // Sync text back to the book object so it persists
-    // ONLY if we have initialized the text (prevents wiping text on mount)
+    if (!text) {
+      setSegments([]);
+      return;
+    }
+
+    const processData = async () => {
+      setIsProcessingText(true);
+      try {
+        const processed = await processTextAsync(text);
+        if (active) {
+          setSegments(processed);
+        }
+      } catch (err) {
+        console.error("Failed to process text", err);
+      } finally {
+        if (active) setIsProcessingText(false);
+      }
+    };
+
+    processData();
+
+    return () => {
+      active = false;
+    };
+  }, [text]);
+
+  // 4. Sync current text/index back to the SPECIFIC book in the library
+  // This is the "save" mechanism. It MUST be stable.
+  const lastSyncRef = useRef<{text: string; index: number; bookId: string} | null>(null);
+
+  useEffect(() => {
     if (activeBookId && isTextInitialized) {
+      // Don't sync if segments aren't ready yet or the length is fundamentally wrong for the text
+      if (text.length > 100 && segments.length === 0) return;
+
+      // Use segments.length - 1 so reaching the absolute last segment equals 100%
+      const progress = segments.length > 0
+        ? Math.round((currentSegmentIndex / Math.max(1, segments.length - 1)) * 100)
+        : 0;
+
+      // Prevent redundant syncs
+      if (
+        lastSyncRef.current?.bookId === activeBookId &&
+        lastSyncRef.current?.text === text &&
+        lastSyncRef.current?.index === currentSegmentIndex
+      ) {
+        return;
+      }
+
       setBooks((prevBooks) => {
-        let changed = false;
-        const newBooks = prevBooks.map((b) => {
-          if (b.id === activeBookId && b.text !== text) {
-            changed = true;
-            return { ...b, text };
-          }
-          return b;
-        });
-        return changed ? newBooks : prevBooks;
+        const bookIndex = prevBooks.findIndex(b => b.id === activeBookId);
+        if (bookIndex === -1) return prevBooks;
+        
+        const b = prevBooks[bookIndex];
+        if (b.text === text && b.currentSegmentIndex === currentSegmentIndex && b.progress === progress) {
+          return prevBooks;
+        }
+
+        const updatedBooks = [...prevBooks];
+        updatedBooks[bookIndex] = { ...b, text, currentSegmentIndex, progress };
+        lastSyncRef.current = { text, index: currentSegmentIndex, bookId: activeBookId };
+        return updatedBooks;
       });
     }
-  }, [text, activeBookId, isTextInitialized]);
+  }, [text, currentSegmentIndex, segments.length, activeBookId, isTextInitialized]);
 
   // Sync ID with Index
   useEffect(() => {
@@ -225,40 +289,21 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         // End of text
         setIsReadingSequence(false);
-        return 0;
+        return prev;
       });
       setCurrentWordCharIndex(-1);
     }
   }, [segments.length]);
 
-  // Update book progress when index changes
-  useEffect(() => {
-    if (activeBookId) {
-      setBooks((prevBooks) => {
-        let changed = false;
-        const newBooks = prevBooks.map((b) => {
-          if (b.id === activeBookId) {
-            const progress =
-              segments.length > 0
-                ? Math.round((currentSegmentIndex / segments.length) * 100)
-                : 0;
-            if (
-              b.currentSegmentIndex !== currentSegmentIndex ||
-              b.progress !== progress
-            ) {
-              changed = true;
-              return { ...b, currentSegmentIndex, progress };
-            }
-          }
-          return b;
-        });
-        return changed ? newBooks : prevBooks;
-      });
-    }
-  }, [currentSegmentIndex, activeBookId, segments.length]);
+  // (Combined into the effect above for stability)
 
   const handleBoundary = useCallback((charIndex: number) => {
-    setCurrentWordCharIndex(charIndex);
+    // In React 18, rapid state updates inside requestAnimationFrame can be transition-batched
+    // or block the main thread from painting if the tree is heavy.
+    // We wrap this non-critical UI update in startTransition so it doesn't block audio.
+    React.startTransition(() => {
+      setCurrentWordCharIndex(charIndex);
+    });
   }, []);
 
   const {
@@ -355,7 +400,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     const book = providedBook || books.find((b) => b.id === bookId);
     
     if (book) {
-      // Set text immediately to avoid delay or sync issues
+      // Set text and index immediately to avoid delay or sync issues
       setTextInternal(book.text);
       setCurrentSegmentIndex(book.currentSegmentIndex);
       setIsTextInitialized(true);
@@ -363,6 +408,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsTextInitialized(false);
     }
 
+    // Set active ID last to trigger effects with initialized state
     setActiveBookId(bookId);
   };
 
@@ -403,48 +449,57 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Toast Notification State
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastState, setToastState] = useState<{message: string; type: "info" | "success" | "warning" | "error"} | null>(null);
 
-  const showToast = (message: string) => {
-    setToastMessage(message);
+  const showToast = (message: string, type: "info" | "success" | "warning" | "error" = "info") => {
+    setToastState({ message, type });
   };
 
+  const value = React.useMemo(() => ({
+    text,
+    setText: setTextInternal,
+    segments,
+    currentSegmentId,
+    currentSegmentIndex,
+    setCurrentSegmentIndex,
+    currentWordCharIndex,
+    isPlaying: isReadingSequence || isSpeaking,
+    isPaused,
+    isSynthesizing,
+    isProcessingText,
+    highlightEnabled,
+    setHighlightEnabled,
+    settings,
+    updateSettings,
+    play,
+    pause,
+    resume: synthResume,
+    stop,
+    // Library
+    books,
+    activeBookId,
+    addBook,
+    updateBook,
+    selectBook,
+    updateBookProgress,
+    removeBook,
+    // Utils
+    showToast,
+  }), [
+    text, segments, currentSegmentId, currentSegmentIndex, currentWordCharIndex, isReadingSequence, 
+    isSpeaking, isPaused, isSynthesizing, isProcessingText, highlightEnabled, settings, 
+    books, activeBookId, synthResume, handleBoundary, handleSegmentEnd
+  ]);
+
   return (
-    <ReaderContext.Provider
-      value={{
-        text,
-        setText: setTextInternal,
-        segments,
-        currentSegmentId,
-        currentSegmentIndex,
-        setCurrentSegmentIndex,
-        currentWordCharIndex,
-        isPlaying: isReadingSequence || isSpeaking,
-        isPaused,
-        isSynthesizing,
-        highlightEnabled,
-        setHighlightEnabled,
-        settings,
-        updateSettings,
-        play,
-        pause,
-        resume: synthResume,
-        stop,
-        // Library
-        books,
-        activeBookId,
-        addBook,
-        updateBook,
-        selectBook,
-        updateBookProgress,
-        removeBook,
-        // Utils
-        showToast,
-      }}
-    >
+    <ReaderContext.Provider value={value}>
       {children}
-      {toastMessage && (
-        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
+      {toastState && (
+        <Toast 
+          message={toastState.message} 
+          type={toastState.type}
+          onClose={() => setToastState(null)} 
+        />
       )}
     </ReaderContext.Provider>
   );
