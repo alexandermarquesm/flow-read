@@ -16,6 +16,7 @@ const discoveryController = new DiscoveryController();
 
 Bun.serve({
   port: PORT,
+  idleTimeout: 120, // Aumentado para 2 minutos para permitir que a IA do Python processe livros grandes
   async fetch(req) {
     const url = new URL(req.url);
 
