@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Play, Loader2 } from "lucide-react";
 import { WaveDecoration } from "../../components/WaveDecoration";
+import { Button } from "../../components/Button/Button";
 import { useReader } from "../../context/ReaderContext";
 import styles from "./Home.module.css";
 
@@ -19,21 +20,23 @@ export interface DiscoveryBook {
 const FALLBACK_COLORS = ["#A8BCA1", "#8B9DA3", "#D4C4B7", "#98A6B0", "#DBCBBd"];
 
 export const Home = () => {
-  const navigate = useNavigate();
-  const { books, activeBookId, addBook, selectBook } = useReader();
+  const navigate = useNavigate(); // Could be reused, leaving it for now
+  const { books, activeBookId, addBook, showToast } = useReader();
   const [popularBooks, setPopularBooks] = useState<DiscoveryBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
-    // 1. Try to load from cache
+    let mounted = true;
+
+    // 1. Try to load from cache immediately
     const cached = localStorage.getItem("popular-books-cache");
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setPopularBooks(parsed);
-          setLoading(false); // We have something to show, so hide loading (though we still fetch)
+          setLoading(false);
         }
       } catch (err) {
         console.error("Failed to parse cached popular books", err);
@@ -43,7 +46,7 @@ export const Home = () => {
     const fetchPopular = async () => {
       try {
         const response = await fetch("http://127.0.0.1:4000/api/discovery/popular");
-        if (response.ok) {
+        if (response.ok && mounted) {
           const data = await response.json();
           const mapped = data.slice(0, 6).map((b: any, i: number) => ({
             ...b,
@@ -55,20 +58,25 @@ export const Home = () => {
       } catch (err) {
         console.error("Failed to fetch popular books", err);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
+
     fetchPopular();
+    return () => { mounted = false; };
   }, []);
 
   const handleBookClick = async (book: DiscoveryBook) => {
     if (downloadingId) return;
     
-    // Check if we already have it
-    const existing = books.find(b => b.title === book.title && b.author === book.author);
+    // 1. Check if we already have it in the library (by Title/Author)
+    const existing = books.find(b => 
+      b.title.toLowerCase().includes(book.title.toLowerCase()) && 
+      b.author?.toLowerCase().includes(book.author?.toLowerCase() || "")
+    );
+
     if (existing) {
-      selectBook(existing.id);
-      navigate("/reading");
+      showToast("Este livro já está na sua Library!", "info");
       return;
     }
 
@@ -76,28 +84,50 @@ export const Home = () => {
     try {
       const response = await fetch(`http://127.0.0.1:4000/api/discovery/download?url=${encodeURIComponent(book.link)}`);
       if (!response.ok) throw new Error("Failed to download book");
+      
       const data = await response.json();
-
       const content = data.formatted_content;
-      const { title, author, chapters, suggested_start } = content;
       
-      const startIndex = suggested_start?.chapter_index ?? 0;
-      const narrativeChapters = chapters.slice(startIndex).filter((ch: any) => ch.is_narrative);
+      // Pula metadados iniciais (TOC, Prefácios, etc) usando o índice sugerido
+      const startIndex = content.suggested_start?.chapter_index ?? 0;
+
+      // Reconstitui o texto e captura metadados de capítulos
+      let currentLength = 0;
+      const chaptersMetadata: {
+        title: string;
+        startChar: number;
+        index: number;
+      }[] = [];
       
-      const fullText = narrativeChapters.map((ch: any) => ch.paragraphs.join("\n\n")).join("\n\n---\n\n");
-      
-      const newBook = addBook(title, author, fullText, data.cover_url || book.cover_url, {
-        chapters: narrativeChapters.map((ch: any, idx: number) => ({
-          title: ch.title,
-          startChar: 0,
-          index: ch.index || idx
-        }))
+      const narrativeChapters = content.chapters
+        .slice(startIndex)
+        .filter((ch: any) => ch.is_narrative);
+
+      const fullText = narrativeChapters
+        .map((ch: any) => {
+          chaptersMetadata.push({
+            title: ch.title,
+            startChar: currentLength,
+            index: ch.index,
+          });
+          const chText = ch.paragraphs.join("\n\n");
+          currentLength += chText.length + 2; // +2 pelo join("\n\n")
+          return chText;
+        })
+        .join("\n\n");
+
+      // Aumenta a performance e aplica o padrão do Nexus
+      addBook(content.title, content.author, fullText, data.cover_url || book.cover_url, {
+        genre: "Discovery",
+        publicationDate: data.year || book.year || "",
+        chapters: chaptersMetadata
       });
- 
-      selectBook(newBook.id, newBook);
-      navigate("/reading");
-     } catch (err) {
+
+      // Mostra a notificação amigável mantendo o usuário na Home
+      showToast("Livro adicionado com sucesso à sua Library!", "success");
+    } catch (err: any) {
       console.error("Error downloading book:", err);
+      showToast("O livro demorou muito para ser formatado ou ocorreu um erro. Tente novamente.", "error");
     } finally {
       setDownloadingId(null);
     }
@@ -124,18 +154,18 @@ export const Home = () => {
             <WaveDecoration className={styles.waveDecoration} />
 
             <div className={styles.heroContent}>
-              <button
+              <Button
+                variant="primary"
                 onClick={() => heroBook ? handleBookClick(heroBook) : navigate("/reading")}
-                className={styles.ctaButton}
                 disabled={!!downloadingId}
-              >
-                {downloadingId === heroBook?.link ? (
+                icon={downloadingId === heroBook?.link ? (
                   <Loader2 size={20} className={styles.spin} />
                 ) : (
                   <Play size={20} fill="currentColor" />
                 )}
+              >
                 {downloadingId === heroBook?.link ? "Loading..." : "Read Now"}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -158,7 +188,15 @@ export const Home = () => {
             onClick={() => navigate("/reading")}
           >
             <div className={styles.cardImageContainer}>
-              <img src="/cozy-corner.png" alt="Cozy reading corner" />
+              {currentBook?.coverUrl ? (
+                <img 
+                  src={currentBook.coverUrl} 
+                  alt={`Capa do livro: ${currentBook.title}`} 
+                  className={styles.bookCoverImage}
+                />
+              ) : (
+                <img src="/cozy-corner.png" alt="Cozy reading corner" />
+              )}
             </div>
 
             <div className={styles.cardContent}>
@@ -192,15 +230,17 @@ export const Home = () => {
                 <br /> you hold in hands.
               </p>
 
-              <button
-                className={styles.cardButton}
+              <Button
+                variant="primary"
+                size="sm"
+                fullWidth
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate("/reading");
                 }}
               >
                 Continue Reading
-              </button>
+              </Button>
             </div>
           </div>
         </div>

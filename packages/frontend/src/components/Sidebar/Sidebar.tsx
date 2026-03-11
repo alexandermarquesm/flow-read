@@ -5,6 +5,7 @@ import {
   Library,
   Settings as SettingsIcon,
 } from "lucide-react";
+import { Button } from "../Button/Button";
 import styles from "./Sidebar.module.css";
 
 interface SidebarProps {
@@ -59,10 +60,14 @@ export const Sidebar = ({ className, style }: SidebarProps) => {
       </nav>
 
       <div className={styles.footer}>
-        <button className={styles.settingsBtn}>
-          <SettingsIcon size={20} />
+        <Button
+          variant="ghost"
+          fullWidth
+          icon={<SettingsIcon size={20} />}
+          onClick={() => {}} // Handle settings click if needed
+        >
           Settings
-        </button>
+        </Button>
       </div>
     </aside>
   );

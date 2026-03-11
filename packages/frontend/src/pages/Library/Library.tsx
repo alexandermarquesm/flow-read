@@ -7,18 +7,18 @@ import {
   Play,
   ImageOff,
   DownloadCloud,
-  Loader2,
   Compass,
   AlertCircle,
 } from "lucide-react";
 import { useReader } from "../../context/ReaderContext";
 import { useNavigate } from "react-router-dom";
+import { Button } from "../../components/Button/Button";
 import styles from "./Library.module.css";
 
-type FilterType = "all" | "unread" | "reading";
+type FilterType = "all" | "unread" | "reading" | "read";
 
 export const Library = () => {
-  const { books, selectBook, addBook, updateBook, removeBook } = useReader();
+  const { books, selectBook, addBook, updateBook, removeBook, showToast } = useReader();
   const navigate = useNavigate();
 
   // UI State
@@ -58,13 +58,44 @@ export const Library = () => {
       if (!matchesSearch) return false;
 
       // 2. Tab Filter
-      if (activeFilter === "unread") return book.progress === 0;
-      if (activeFilter === "reading")
-        return book.progress > 0 && book.progress < 100;
+      // Calculate progress safely (default to 0 if undefined)
+      const progress = book.progress || 0;
+      const index = book.currentSegmentIndex || 0;
+
+      if (activeFilter === "unread") return progress === 0 && index === 0;
+      if (activeFilter === "reading") return (progress > 0 || index > 0) && progress < 100;
+      if (activeFilter === "read") return progress >= 100;
 
       return true; // 'all'
     });
   }, [books, searchQuery, activeFilter]);
+
+  // Filtered Discovery Results (Nexus) - Also respects the active tabs!
+  const filteredDiscoveryResults = useMemo(() => {
+    if (!isDiscoveryMode) return [];
+    
+    return discoveryResults.filter((result) => {
+      // Check if book already exists in library to determine its virtual progress
+      const existingBook = books.find(b => b.title.toLowerCase() === result.title.toLowerCase());
+      
+      if (activeFilter === "all") return true;
+
+      if (!existingBook) {
+        // If not in library, it's 'unread' (0 progress)
+        return activeFilter === "unread";
+      }
+
+      // If in library, check its actual progress
+      const progress = existingBook.progress || 0;
+      const index = existingBook.currentSegmentIndex || 0;
+
+      if (activeFilter === "unread") return progress === 0 && index === 0;
+      if (activeFilter === "reading") return (progress > 0 || index > 0) && progress < 100;
+      if (activeFilter === "read") return progress >= 100;
+
+      return true;
+    });
+  }, [discoveryResults, activeFilter, isDiscoveryMode, books]);
 
   const handleBookClick = (bookId: string) => {
     selectBook(bookId);
@@ -149,11 +180,14 @@ export const Library = () => {
         chapters: chaptersMetadata,
       });
 
+      showToast("Livro adicionado com sucesso à sua Library!", "success");
+
       setIsDiscoveryMode(false);
       setSearchQuery("");
       setDiscoveryResults([]);
     } catch (err: any) {
-      alert(`Erro: ${err.message}`);
+      console.error(err);
+      showToast(`Erro ao baixar livro: ${err.message}`, "error");
     } finally {
       setDownloadingUrl(null);
     }
@@ -216,9 +250,43 @@ export const Library = () => {
     <div className={styles.container}>
       {/* HEADER SECTION */}
       <div className={styles.header}>
-        {/* Top Row: Title & Search */}
+        {/* Top Row: Title */}
         <div className={styles.headerTop}>
           <h1 className={styles.title}>My Library</h1>
+        </div>
+
+        {/* Controls Row: Filters & Search/Nexus Toggle */}
+        <div className={styles.controls}>
+          <div className={styles.filters}>
+            <button
+              className={styles.filterBtn}
+              data-active={activeFilter === "all"}
+              onClick={() => setActiveFilter("all")}
+            >
+              All
+            </button>
+            <button
+              className={styles.filterBtn}
+              data-active={activeFilter === "unread"}
+              onClick={() => setActiveFilter("unread")}
+            >
+              Unread
+            </button>
+            <button
+              className={styles.filterBtn}
+              data-active={activeFilter === "reading"}
+              onClick={() => setActiveFilter("reading")}
+            >
+              Reading Now
+            </button>
+            <button
+              className={styles.filterBtn}
+              data-active={activeFilter === "read"}
+              onClick={() => setActiveFilter("read")}
+            >
+              Read
+            </button>
+          </div>
 
           <div className={styles.searchContainer}>
             <div className={styles.nexusToggle}>
@@ -257,41 +325,10 @@ export const Library = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               {isDiscoveryLoading && (
-                <Loader2 size={16} className={styles.loadingSpinnerIcon} />
+                <div className={styles.nexusSpinnerSmall} />
               )}
             </form>
           </div>
-        </div>
-
-        {/* Controls Row: Filters & Sort */}
-        <div className={styles.controls}>
-          <div className={styles.filters}>
-            <button
-              className={styles.filterBtn}
-              data-active={activeFilter === "all"}
-              onClick={() => setActiveFilter("all")}
-            >
-              All
-            </button>
-            <button
-              className={styles.filterBtn}
-              data-active={activeFilter === "unread"}
-              onClick={() => setActiveFilter("unread")}
-            >
-              Unread
-            </button>
-            <button
-              className={styles.filterBtn}
-              data-active={activeFilter === "reading"}
-              onClick={() => setActiveFilter("reading")}
-            >
-              Reading Now
-            </button>
-          </div>
-
-          <button className={styles.sortBtn}>
-            Sort <Search size={16} />
-          </button>
         </div>
       </div>
 
@@ -309,6 +346,23 @@ export const Library = () => {
               >
                 {/* Cover Image Wrapper */}
                 <div className={styles.coverWrapper}>
+                  {/* Status Ribbon */}
+                  <div
+                    className={`${styles.statusRibbon} ${
+                      (book.progress || 0) >= 100
+                        ? styles.ribbonRead
+                        : (book.progress || 0) > 0 || (book.currentSegmentIndex || 0) > 0
+                          ? styles.ribbonReading
+                          : styles.ribbonUnread
+                    }`}
+                  >
+                    {(book.progress || 0) >= 100
+                      ? "Read"
+                      : (book.progress || 0) > 0 || (book.currentSegmentIndex || 0) > 0
+                        ? `${Math.round(book.progress || 0)}%`
+                        : "New"}
+                  </div>
+
                   {hasValidCover ? (
                     <img
                       src={book.coverUrl}
@@ -386,64 +440,82 @@ export const Library = () => {
 
           {isDiscoveryLoading ? (
             <div className={styles.emptyDiscovery}>
-              <Loader2 size={40} className={styles.spin} />
+              <div className={styles.nexusSpinnerLarge} />
               <p>Escaneando fontes literárias...</p>
             </div>
-          ) : discoveryResults.length > 0 ? (
+          ) : filteredDiscoveryResults.length > 0 ? (
             <div className={styles.resultsGrid}>
-              {discoveryResults.map((result, idx) => (
-                <div key={idx} className={styles.resultCard}>
-                  <div className={styles.resultCoverWrapper}>
-                    {result.cover_url && !imageErrors[`discovery-${idx}`] ? (
-                      <img
-                        src={result.cover_url}
-                        alt={result.title}
-                        className={styles.resultCover}
-                        onError={() =>
-                          setImageErrors((prev) => ({
-                            ...prev,
-                            [`discovery-${idx}`]: true,
-                          }))
-                        }
-                      />
-                    ) : (
-                      <div className={styles.resultNoCover}>
-                        <ImageOff size={24} />
-                      </div>
-                    )}
-                    <span className={styles.resultSourceBadge}>
-                      {result.source}
-                    </span>
-                  </div>
+              {filteredDiscoveryResults.map((result, idx) => {
+                const isAlreadyInLibrary = books.some(
+                  (b) => b.title.toLowerCase() === result.title.toLowerCase(),
+                );
 
-                  <div className={styles.resultContent}>
-                    <h3 className={styles.resultTitle}>{result.title}</h3>
-                    <p className={styles.resultAuthor}>
-                      by {result.author || "Unknown"}
-                    </p>
-
-                    <div className={styles.resultFooter}>
-                      <span className={styles.resultLang}>
-                        {result.language}
-                        {result.year && ` • ${result.year}`}
+                return (
+                  <div key={idx} className={styles.resultCard}>
+                    <div className={styles.resultCoverWrapper}>
+                      {result.cover_url && !imageErrors[`discovery-${idx}`] ? (
+                        <img
+                          src={result.cover_url}
+                          alt={result.title}
+                          className={styles.resultCover}
+                          onError={() =>
+                            setImageErrors((prev) => ({
+                              ...prev,
+                              [`discovery-${idx}`]: true,
+                            }))
+                          }
+                        />
+                      ) : (
+                        <div className={styles.resultNoCover}>
+                          <ImageOff size={24} />
+                        </div>
+                      )}
+                      <span className={styles.resultSourceBadge}>
+                        {result.source}
                       </span>
-                      <button
-                        className={styles.downloadBtn}
-                        disabled={downloadingUrl === result.link}
-                        onClick={() => handleDownloadBook(result.link)}
-                      >
-                        {downloadingUrl === result.link ? (
-                          <span className={styles.loadingSpinner}></span>
+                    </div>
+
+                    <div className={styles.resultContent}>
+                      <h3 className={styles.resultTitle}>{result.title}</h3>
+                      <p className={styles.resultAuthor}>
+                        by {result.author || "Unknown"}
+                      </p>
+
+                      <div className={styles.resultFooter}>
+                        <span className={styles.resultLang}>
+                          {result.language}
+                          {result.year && ` • ${result.year}`}
+                        </span>
+
+                        {isAlreadyInLibrary ? (
+                          <Button
+                            variant="added"
+                            size="sm"
+                            icon={<Play size={16} fill="currentColor" />}
+                            title="Já está na sua biblioteca"
+                          >
+                            Adicionado
+                          </Button>
                         ) : (
-                          <>
-                            <DownloadCloud size={16} /> Adicionar
-                          </>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={downloadingUrl === result.link}
+                            onClick={() => handleDownloadBook(result.link)}
+                            icon={downloadingUrl === result.link ? (
+                              <span className={styles.loadingSpinner}></span>
+                            ) : (
+                              <DownloadCloud size={16} />
+                            )}
+                          >
+                            {downloadingUrl === result.link ? "" : "Adicionar"}
+                          </Button>
                         )}
-                      </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className={styles.emptyDiscovery}>
@@ -546,9 +618,9 @@ export const Library = () => {
               </div>
 
               <div className={styles.submitBtnContainer}>
-                <button type="submit" className={styles.submitBtn}>
+                <Button type="submit" variant="primary">
                   {editingBookId ? "Save Changes" : "Add to Library"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
