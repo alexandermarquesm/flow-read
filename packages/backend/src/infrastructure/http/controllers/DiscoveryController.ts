@@ -15,16 +15,34 @@ export class DiscoveryController {
       return new Response(JSON.stringify(results), {
         headers: { "Content-Type": "application/json" },
       });
-    } catch (error) {
-      console.error("Discovery Popular Error:", error);
+    } catch (error: any) {
+      return this.handleError("popular", error);
+    }
+  }
+
+  private handleError(operation: string, error: any): Response {
+    if (error.message === "DISCOVERY_SERVICE_UNAVAILABLE") {
       return new Response(
-        JSON.stringify({ error: "Failed to fetch popular books" }),
+        JSON.stringify({ 
+          error: "BiblioCLI Discovery Service is currently offline",
+          code: "SERVICE_OFFLINE",
+          fallback: [] 
+        }),
         {
-          status: 500,
+          status: 503,
           headers: { "Content-Type": "application/json" },
         },
       );
     }
+
+    console.error(`Discovery ${operation} Error:`, error);
+    return new Response(
+      JSON.stringify({ error: `Internal error during ${operation}` }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   async search(req: Request): Promise<Response> {
@@ -46,15 +64,8 @@ export class DiscoveryController {
       return new Response(JSON.stringify(results), {
         headers: { "Content-Type": "application/json" },
       });
-    } catch (error) {
-      console.error("Discovery Search Error:", error);
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch from discovery source" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+    } catch (error: any) {
+      return this.handleError("search", error);
     }
   }
 
@@ -77,15 +88,8 @@ export class DiscoveryController {
       return new Response(JSON.stringify(data), {
         headers: { "Content-Type": "application/json" },
       });
-    } catch (error) {
-      console.error("Discovery Download Error:", error);
-      return new Response(
-        JSON.stringify({ error: "Failed to download book content" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+    } catch (error: any) {
+      return this.handleError("download", error);
     }
   }
 }

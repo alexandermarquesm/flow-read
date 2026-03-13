@@ -1,13 +1,28 @@
+import { config } from "../config/config";
+import { log } from "@flow-read/shared";
 import type {
   DiscoveryBook,
   IDiscoveryRepository,
 } from "../core/repositories/IDiscoveryRepository";
 
 export class BiblioCliDiscoveryRepository implements IDiscoveryRepository {
-  private baseUrl = "http://127.0.0.1:8000/api/v1/books";
+  private baseUrl = config.discovery.baseUrl;
+
+  private async safeFetch(url: string, options?: RequestInit): Promise<Response> {
+    try {
+      const response = await fetch(url, options);
+      return response;
+    } catch (error: any) {
+      if (error.code === "ConnectionRefused" || error.errno === -111) {
+        log(`[Discovery] Service unavailable at ${this.baseUrl}. Check if BiblioCLI is running.`);
+        throw new Error("DISCOVERY_SERVICE_UNAVAILABLE");
+      }
+      throw error;
+    }
+  }
 
   async search(query: string): Promise<DiscoveryBook[]> {
-    const response = await fetch(
+    const response = await this.safeFetch(
       `${this.baseUrl}/search?query=${encodeURIComponent(query)}`,
     );
     if (!response.ok) throw new Error("Failed to search in BiblioCLI");
@@ -15,7 +30,7 @@ export class BiblioCliDiscoveryRepository implements IDiscoveryRepository {
   }
 
   async downloadAndFormat(url: string): Promise<any> {
-    const response = await fetch(
+    const response = await this.safeFetch(
       `${this.baseUrl}/download?url=${encodeURIComponent(url)}`,
     );
     if (!response.ok) throw new Error("Failed to download from BiblioCLI");
@@ -23,7 +38,7 @@ export class BiblioCliDiscoveryRepository implements IDiscoveryRepository {
   }
 
   async getPopularBooks(): Promise<DiscoveryBook[]> {
-    const response = await fetch(`${this.baseUrl}/popular`);
+    const response = await this.safeFetch(`${this.baseUrl}/popular`);
     if (!response.ok) throw new Error("Failed to fetch popular books from BiblioCLI");
     return (await response.json()) as DiscoveryBook[];
   }

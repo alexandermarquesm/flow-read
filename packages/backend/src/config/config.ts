@@ -12,4 +12,7 @@ export const config = {
     key: process.env.AZURE_TTS_KEY || "",
     region: process.env.AZURE_TTS_REGION || "",
   },
+  discovery: {
+    baseUrl: process.env.DISCOVERY_API_URL || "http://127.0.0.1:8000/api/v1/books",
+  },
 };
