@@ -1,3 +1,4 @@
+import { API_URL } from "../../config";
 import { useState, useMemo, useEffect } from "react";
 import {
   Search,
@@ -124,7 +125,7 @@ export const Library = () => {
     setDiscoveryError(null);
     try {
       const response = await fetch(
-        `http://127.0.0.1:4000/api/discovery/search?query=${encodeURIComponent(searchQuery)}`,
+        `${API_URL}/api/discovery/search?query=${encodeURIComponent(searchQuery)}`,
       );
       if (!response.ok) throw new Error("Falha ao buscar na API Nexus.");
       const data = await response.json();
@@ -140,7 +141,7 @@ export const Library = () => {
     setDownloadingUrl(url);
     try {
       const response = await fetch(
-        `http://127.0.0.1:4000/api/discovery/download?url=${encodeURIComponent(url)}`,
+        `${API_URL}/api/discovery/download?url=${encodeURIComponent(url)}`,
       );
       if (!response.ok) throw new Error("Erro ao baixar conteúdo do livro.");
 

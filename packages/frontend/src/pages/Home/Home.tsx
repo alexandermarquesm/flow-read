@@ -1,3 +1,4 @@
+import { API_URL } from "../../config";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Play, Loader2 } from "lucide-react";
@@ -45,7 +46,7 @@ export const Home = () => {
 
     const fetchPopular = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:4000/api/discovery/popular");
+        const response = await fetch(`${API_URL}/api/discovery/popular`);
         if (response.ok && mounted) {
           const data = await response.json();
           const mapped = data.slice(0, 6).map((b: any, i: number) => ({
@@ -82,7 +83,7 @@ export const Home = () => {
 
     setDownloadingId(book.link);
     try {
-      const response = await fetch(`http://127.0.0.1:4000/api/discovery/download?url=${encodeURIComponent(book.link)}`);
+      const response = await fetch(`${API_URL}/api/discovery/download?url=${encodeURIComponent(book.link)}`);
       if (!response.ok) throw new Error("Failed to download book");
       
       const data = await response.json();

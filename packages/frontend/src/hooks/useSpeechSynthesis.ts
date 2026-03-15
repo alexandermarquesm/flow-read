@@ -1,3 +1,4 @@
+import { API_URL } from "../config";
 import { useState, useRef, useCallback, useEffect } from "react";
 
 export interface SpeechSettings {
@@ -37,7 +38,7 @@ export const useSpeechSynthesis = ({
   useEffect(() => {
     const fetchVoices = async () => {
       try {
-        const response = await fetch("http://localhost:4000/api/voices"); // Backend URL
+        const response = await fetch(`${API_URL}/api/voices`); // Backend URL
         if (response.ok) {
           const data = await response.json();
           let mappedVoices = data.map((v: any) => ({
@@ -173,7 +174,7 @@ export const useSpeechSynthesis = ({
         // If volume is 0, don't even fetch, just simulate speaking?
         // Or just let it play (it will be silent). Let's continue.
 
-        const response = await fetch("http://localhost:4000/api/synthesize", {
+        const response = await fetch(`${API_URL}/api/synthesize`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
