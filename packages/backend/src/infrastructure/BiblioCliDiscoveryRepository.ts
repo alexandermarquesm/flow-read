@@ -39,7 +39,11 @@ export class BiblioCliDiscoveryRepository implements IDiscoveryRepository {
 
   async getPopularBooks(): Promise<DiscoveryBook[]> {
     const response = await this.safeFetch(`${this.baseUrl}/popular`);
-    if (!response.ok) throw new Error("Failed to fetch popular books from BiblioCLI");
+    if (!response.ok) {
+      const errorBody = await response.text();
+      log(`[Discovery] Failed to fetch popular books. Status: ${response.status}, Body: ${errorBody}`);
+      throw new Error(`Failed to fetch popular books from BiblioCLI: ${response.status}`);
+    }
     return (await response.json()) as DiscoveryBook[];
   }
 }
