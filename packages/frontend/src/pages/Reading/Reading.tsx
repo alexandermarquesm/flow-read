@@ -18,6 +18,7 @@ import { useReader } from "../../context/ReaderContext";
 import { Settings } from "../../components/Settings/Settings";
 import { ActiveSegment } from "../../components/ActiveSegment/ActiveSegment";
 import { Sidebar } from "../../components/Sidebar/Sidebar";
+import { CoverImage, getImageUrl } from "../../components/CoverImage/CoverImage";
 import styles from "./Reading.module.css";
 import type { TextSegment } from "../../utils/textProcessor";
 
@@ -452,8 +453,8 @@ export const Reading = () => {
           {/* Row 2 Col 2: Image (Aside) */}
           <aside className={styles.sidePanel}>
             {currentBook.coverUrl ? (
-              <img
-                src={currentBook.coverUrl}
+              <CoverImage
+                src={getImageUrl(currentBook.coverUrl)}
                 className={styles.bookCover}
                 alt="Cover"
               />

@@ -21,17 +21,44 @@ const listVoicesUseCase = new ListVoices(ttsService);
 const synthesizeSpeechUseCase = new SynthesizeSpeech(ttsService);
 
 export class TtsController {
+  private voicesCache = new Map<string, { data: any; timestamp: number }>();
+  private CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
+
   async getVoices(req: Request): Promise<Response> {
     const url = new URL(req.url);
-    const languageCode = url.searchParams.get("languageCode") || undefined;
+    const languageCode = url.searchParams.get("languageCode") || "all";
+
+    const cached = this.voicesCache.get(languageCode);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return new Response(JSON.stringify(cached.data), {
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=86400"
+        },
+      });
+    }
 
     try {
-      const voices = await listVoicesUseCase.execute(languageCode);
+      const voices = await listVoicesUseCase.execute(languageCode === "all" ? undefined : languageCode);
+      this.voicesCache.set(languageCode, { data: voices, timestamp: Date.now() });
+
       return new Response(JSON.stringify(voices), {
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=86400" 
+        },
       });
     } catch (error) {
       console.error("Error fetching voices:", error);
+      // Return stale cache if available
+      if (cached) {
+        return new Response(JSON.stringify(cached.data), {
+          headers: { 
+            "Content-Type": "application/json",
+            "Cache-Control": "public, max-age=30" // Retry sooner
+          },
+        });
+      }
       return new Response(JSON.stringify({ error: "Failed to fetch voices" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },

@@ -9,6 +9,7 @@ import React, {
 import {
   useSpeechSynthesis,
   type SpeechSettings,
+  type CustomVoice,
 } from "../hooks/useSpeechSynthesis";
 import { processTextAsync, type TextSegment } from "../utils/textProcessor";
 import { Toast } from "../components/Toast/Toast";
@@ -52,6 +53,8 @@ interface ReaderContextType {
   setHighlightEnabled: (enabled: boolean) => void;
   settings: SpeechSettings;
   updateSettings: (newSettings: Partial<SpeechSettings>) => void;
+  voices: CustomVoice[];
+  loadVoices: () => Promise<void>;
 
   // Library Management
   books: Book[];
@@ -307,6 +310,8 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const {
+    voices,
+    loadVoices,
     isSpeaking,
     isPaused,
     isSynthesizing,
@@ -471,6 +476,8 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     setHighlightEnabled,
     settings,
     updateSettings,
+    voices,
+    loadVoices,
     play,
     pause,
     resume: synthResume,
@@ -487,7 +494,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     showToast,
   }), [
     text, segments, currentSegmentId, currentSegmentIndex, currentWordCharIndex, isReadingSequence, 
-    isSpeaking, isPaused, isSynthesizing, isProcessingText, highlightEnabled, settings, 
+    isSpeaking, isPaused, isSynthesizing, isProcessingText, highlightEnabled, settings, voices, loadVoices,
     books, activeBookId, synthResume, handleBoundary, handleSegmentEnd
   ]);
 

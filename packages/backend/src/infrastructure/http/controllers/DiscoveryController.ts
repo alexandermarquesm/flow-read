@@ -8,14 +8,48 @@ const searchUseCase = new SearchDiscoveryBooks(discoveryRepo);
 const downloadUseCase = new DownloadAndFormatBook(discoveryRepo);
 const popularUseCase = new GetPopularBooks(discoveryRepo);
 
+// Simple In-Memory Cache
+const POPULAR_CACHE: { data: any; lastFetch: number } = {
+  data: null,
+  lastFetch: 0,
+};
+const POPULAR_TTL_MS = 1000 * 60 * 30; // 30 minutes
+
 export class DiscoveryController {
   async popular(req: Request): Promise<Response> {
     try {
+      const now = Date.now();
+
+      // Return from cache if valid
+      if (POPULAR_CACHE.data && now - POPULAR_CACHE.lastFetch < POPULAR_TTL_MS) {
+        return new Response(JSON.stringify(POPULAR_CACHE.data), {
+          headers: { 
+            "Content-Type": "application/json",
+            "Cache-Control": `public, max-age=${POPULAR_TTL_MS / 1000}`
+          },
+        });
+      }
+
       const results = await popularUseCase.execute();
+      
+      // Update cache
+      POPULAR_CACHE.data = results;
+      POPULAR_CACHE.lastFetch = now;
+
       return new Response(JSON.stringify(results), {
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": `public, max-age=${POPULAR_TTL_MS / 1000}`
+        },
       });
     } catch (error: any) {
+      // Fallback to cache if error and we have stale data
+      if (POPULAR_CACHE.data) {
+        console.warn("Returning stale cache due to error in popularUseCase");
+        return new Response(JSON.stringify(POPULAR_CACHE.data), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
       return this.handleError("popular", error);
     }
   }

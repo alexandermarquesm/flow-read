@@ -5,6 +5,7 @@ import { Play, Loader2 } from "lucide-react";
 import { WaveDecoration } from "../../components/WaveDecoration";
 import { Button } from "../../components/Button/Button";
 import { useReader } from "../../context/ReaderContext";
+import { CoverImage, getImageUrl } from "../../components/CoverImage/CoverImage";
 import styles from "./Home.module.css";
 
 export interface DiscoveryBook {
@@ -171,9 +172,9 @@ export const Home = () => {
           </div>
 
           <div className={styles.heroImageContainer}>
-            <img
+            <CoverImage
               className={styles.heroImage}
-              src={heroBook?.cover_url || ""}
+              src={getImageUrl(heroBook?.cover_url)}
               alt={heroBook?.title || "Hero Book"}
             />
             <p className={styles.heroSubtitle}>
@@ -190,8 +191,8 @@ export const Home = () => {
           >
             <div className={styles.cardImageContainer}>
               {currentBook?.coverUrl ? (
-                <img 
-                  src={currentBook.coverUrl} 
+                <CoverImage 
+                  src={getImageUrl(currentBook.coverUrl)}
                   alt={`Capa do livro: ${currentBook.title}`} 
                   className={styles.bookCoverImage}
                 />
@@ -266,13 +267,16 @@ export const Home = () => {
                 >
                   <div
                     className={styles.arrivalCover}
-                    style={{ 
-                      backgroundColor: book.color,
-                      backgroundImage: book.cover_url ? `url(${book.cover_url})` : "none",
-                      backgroundSize: "cover",
-                      backgroundPosition: "center"
-                    }}
+                    style={{ backgroundColor: book.color }}
                   >
+                    {book.cover_url && (
+                      <CoverImage
+                        src={getImageUrl(book.cover_url)}
+                        alt={book.title}
+                        loading="lazy"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    )}
                     {downloadingId === book.link && (
                       <div className={styles.cardOverlay}>
                         <Loader2 className={styles.spin} />

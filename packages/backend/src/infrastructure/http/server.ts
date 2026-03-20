@@ -1,8 +1,8 @@
-// import { serve } from "bun"; // Use global Bun
 import { log, LOG_PREFIX } from "@flow-read/shared";
 import { GetWelcomeMessageUseCase } from "../../core/use-cases/GetWelcomeMessage";
 import { TtsController } from "./controllers/TtsController";
 import { DiscoveryController } from "./controllers/DiscoveryController";
+import { ImageController } from "./controllers/ImageController";
 import { config } from "../../config/config";
 
 const PORT = config.port;
@@ -13,6 +13,7 @@ log(`Starting backend server in ${ENV} mode on port ${PORT}`);
 const getWelcomeMessageUseCase = new GetWelcomeMessageUseCase();
 const ttsController = new TtsController();
 const discoveryController = new DiscoveryController();
+const imageController = new ImageController();
 
 Bun.serve({
   port: PORT,
@@ -85,6 +86,15 @@ Bun.serve({
 
     if (url.pathname === "/api/discovery/download" && req.method === "GET") {
       const response = await discoveryController.download(req);
+      Object.entries(corsHeaders).forEach(([k, v]) => {
+        response.headers.set(k, v);
+      });
+      return response;
+    }
+
+    // Image Proxy Route
+    if (url.pathname === "/api/image" && req.method === "GET") {
+      const response = await imageController.proxy(req);
       Object.entries(corsHeaders).forEach(([k, v]) => {
         response.headers.set(k, v);
       });

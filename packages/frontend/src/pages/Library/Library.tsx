@@ -14,6 +14,7 @@ import {
 import { useReader } from "../../context/ReaderContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/Button/Button";
+import { CoverImage, getImageUrl } from "../../components/CoverImage/CoverImage";
 import styles from "./Library.module.css";
 
 type FilterType = "all" | "unread" | "reading" | "read";
@@ -365,8 +366,8 @@ export const Library = () => {
                   </div>
 
                   {hasValidCover ? (
-                    <img
-                      src={book.coverUrl}
+                    <CoverImage
+                      src={getImageUrl(book.coverUrl)}
                       alt={book.title}
                       className={styles.coverImage}
                       onError={() => handleImageError(book.id)}
@@ -455,8 +456,8 @@ export const Library = () => {
                   <div key={idx} className={styles.resultCard}>
                     <div className={styles.resultCoverWrapper}>
                       {result.cover_url && !imageErrors[`discovery-${idx}`] ? (
-                        <img
-                          src={result.cover_url}
+                        <CoverImage
+                          src={getImageUrl(result.cover_url)}
                           alt={result.title}
                           className={styles.resultCover}
                           onError={() =>

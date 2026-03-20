@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useReader } from "../../context/ReaderContext";
-import { useSpeechSynthesis } from "../../hooks/useSpeechSynthesis";
 import { ChevronDown } from "lucide-react";
 import styles from "./Settings.module.css";
 
@@ -10,10 +9,14 @@ interface SettingsProps {
 }
 
 export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
-  const { highlightEnabled, setHighlightEnabled, settings, updateSettings } =
+  const { highlightEnabled, setHighlightEnabled, settings, updateSettings, voices, loadVoices } =
     useReader();
 
-  const { voices } = useSpeechSynthesis();
+  useEffect(() => {
+    if (isOpen) {
+      loadVoices();
+    }
+  }, [isOpen, loadVoices]);
 
   if (!isOpen) return null;
 

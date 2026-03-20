@@ -1,5 +1,5 @@
 import { API_URL } from "../config";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 
 export interface SpeechSettings {
   pitch: number;
@@ -34,106 +34,107 @@ export const useSpeechSynthesis = ({
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Fetch voices from backend
-  useEffect(() => {
-    const fetchVoices = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/voices`); // Backend URL
-        if (response.ok) {
-          const data = await response.json();
-          let mappedVoices = data.map((v: any) => ({
-            name: v.name,
-            voiceURI: v.id,
-            lang: v.languageCode,
-            provider: v.provider, // Include provider
-            default: false,
-            localService: false,
-          }));
+  // Fetch voices from backend lazily
+  const hasLoadedVoices = useRef(false);
 
-          // Filter and Curate voices
-          mappedVoices = mappedVoices.filter((v: any) => {
-            const l = v.lang.toLowerCase();
-            const provider = v.provider;
-            const name = v.name.toLowerCase();
+  const loadVoices = useCallback(async () => {
+    if (hasLoadedVoices.current || voices.length > 0) return;
+    hasLoadedVoices.current = true;
+    try {
+      const response = await fetch(`${API_URL}/api/voices`); // Backend URL
+      if (response.ok) {
+        const data = await response.json();
+        let mappedVoices = data.map((v: any) => ({
+          name: v.name,
+          voiceURI: v.id,
+          lang: v.languageCode,
+          provider: v.provider, // Include provider
+          default: false,
+          localService: false,
+        }));
 
-            // 1. Azure restriction: Strictly only 3 specific high-quality voices
-            if (provider === "azure") {
-              // We want specific variants to avoid duplicates
-              const isThalita =
-                name.includes("thalita") && name.includes("dragon");
-              const isLeila =
-                name.includes("leila") && !name.includes("multilingual");
-              const isAndrew =
-                name.includes("andrew") &&
-                (name.includes("multilingual") || name.includes("neural"));
+        // Filter and Curate voices
+        mappedVoices = mappedVoices.filter((v: any) => {
+          const l = v.lang.toLowerCase();
+          const provider = v.provider;
+          const name = v.name.toLowerCase();
 
-              // Only keep the first match of each type if there are multiples
-              return isThalita || isLeila || isAndrew;
-            }
+          // 1. Azure restriction: Strictly only 3 specific high-quality voices
+          if (provider === "azure") {
+            // We want specific variants to avoid duplicates
+            const isThalita =
+              name.includes("thalita") && name.includes("dragon");
+            const isLeila =
+              name.includes("leila") && !name.includes("multilingual");
+            const isAndrew =
+              name.includes("andrew") &&
+              (name.includes("multilingual") || name.includes("neural"));
 
-            // 2. Other providers: pt-BR, en-US, en-GB only
-            return l === "pt-br" || l === "en-us" || l === "en-gb";
-          });
+            // Only keep the first match of each type if there are multiples
+            return isThalita || isLeila || isAndrew;
+          }
 
-          // Sort voices: Francisca (Edge) ALWAYS first, then group by provider
-          mappedVoices.sort((a: any, b: any) => {
-            const isFranciscaA =
-              a.provider === "edge" && a.name.includes("Francisca");
-            const isFranciscaB =
-              b.provider === "edge" && b.name.includes("Francisca");
+          // 2. Other providers: pt-BR, en-US, en-GB only
+          return l === "pt-br" || l === "en-us" || l === "en-gb";
+        });
 
-            if (isFranciscaA && !isFranciscaB) return -1;
-            if (!isFranciscaA && isFranciscaB) return 1;
+        // Sort voices: Francisca (Edge) ALWAYS first, then group by provider
+        mappedVoices.sort((a: any, b: any) => {
+          const isFranciscaA =
+            a.provider === "edge" && a.name.includes("Francisca");
+          const isFranciscaB =
+            b.provider === "edge" && b.name.includes("Francisca");
 
-            // Custom order for Azure voices
-            if (a.provider === "azure" && b.provider === "azure") {
-              const azureOrder = ["thalita", "leila", "andrew"];
-              const indexA = azureOrder.findIndex((n) =>
-                a.name.toLowerCase().includes(n),
-              );
-              const indexB = azureOrder.findIndex((n) =>
-                b.name.toLowerCase().includes(n),
-              );
-              return indexA - indexB;
-            }
+          if (isFranciscaA && !isFranciscaB) return -1;
+          if (!isFranciscaA && isFranciscaB) return 1;
 
-            // Group by provider for others
-            if (a.provider !== b.provider) {
-              return a.provider.localeCompare(b.provider);
-            }
+          // Custom order for Azure voices
+          if (a.provider === "azure" && b.provider === "azure") {
+            const azureOrder = ["thalita", "leila", "andrew"];
+            const indexA = azureOrder.findIndex((n) =>
+              a.name.toLowerCase().includes(n),
+            );
+            const indexB = azureOrder.findIndex((n) =>
+              b.name.toLowerCase().includes(n),
+            );
+            return indexA - indexB;
+          }
 
-            // Alphabetical within same provider
-            return a.name.localeCompare(b.name);
-          });
+          // Group by provider for others
+          if (a.provider !== b.provider) {
+            return a.provider.localeCompare(b.provider);
+          }
 
-          // Final cleanup: Ensure only ONE of each Azure voice (in case multiple variants matched)
-          const finalVoices: CustomVoice[] = [];
-          const azureSeen = new Set<string>();
+          // Alphabetical within same provider
+          return a.name.localeCompare(b.name);
+        });
 
-          mappedVoices.forEach((v: CustomVoice) => {
-            if (v.provider === "azure") {
-              const azureOrder = ["thalita", "leila", "andrew"];
-              const key = azureOrder.find((n) =>
-                v.name.toLowerCase().includes(n),
-              );
-              if (key && !azureSeen.has(key)) {
-                azureSeen.add(key);
-                finalVoices.push(v);
-              }
-            } else {
+        // Final cleanup: Ensure only ONE of each Azure voice (in case multiple variants matched)
+        const finalVoices: CustomVoice[] = [];
+        const azureSeen = new Set<string>();
+
+        mappedVoices.forEach((v: CustomVoice) => {
+          if (v.provider === "azure") {
+            const azureOrder = ["thalita", "leila", "andrew"];
+            const key = azureOrder.find((n) =>
+              v.name.toLowerCase().includes(n),
+            );
+            if (key && !azureSeen.has(key)) {
+              azureSeen.add(key);
               finalVoices.push(v);
             }
-          });
+          } else {
+            finalVoices.push(v);
+          }
+        });
 
-          setVoices(finalVoices);
-        }
-      } catch (error) {
-        console.error("Failed to fetch voices:", error);
+        setVoices(finalVoices);
       }
-    };
-
-    fetchVoices();
-  }, []);
+    } catch (error) {
+      console.error("Failed to fetch voices:", error);
+      hasLoadedVoices.current = false;
+    }
+  }, [voices.length]);
 
   const requestRef = useRef<number>(0);
 
@@ -330,5 +331,6 @@ export const useSpeechSynthesis = ({
     pause,
     resume,
     cancel,
+    loadVoices,
   };
 };
