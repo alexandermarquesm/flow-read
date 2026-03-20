@@ -433,6 +433,9 @@
   align-items: center;
   justify-content: flex-start;
   padding-bottom: 2rem;
+  
+  position: relative; /* Context layer to stay above gradients */
+  z-index: 20;
 }
 
 /* Center Group: Progress + Controls */
@@ -479,6 +482,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-shrink: 0;
 }
 
 .iconButtonRound {
@@ -495,11 +499,16 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: all 0.2s;
   position: relative; /* For absolute centered spinner if needed, or flex centering */
+  flex-shrink: 0;
 }
 
 .iconButtonRound:hover {
   transform: scale(1.05);
   background: #4e342e;
+}
+
+.playIconAdjust {
+  margin-left: 2px;
 }
 
 /* Navigation Arrows - Positioning */
@@ -539,6 +548,11 @@
 
 /* Responsive Styles */
 @media (max-width: 900px) {
+  .container {
+    padding-bottom: 80px; /* Reserve space for MobileNav */
+    box-sizing: border-box;
+  }
+
   .readingLayout {
     grid-template-columns: 1fr;
     padding: 0 1.5rem;
@@ -595,11 +609,11 @@
   .textColumn::after {
     content: "";
     position: fixed;
-    bottom: 80px; /* Adjust to stay above the footer */
+    bottom: 160px; /* Perfect offset for Mobile Nav (80px) + Footer (~80px) */
     left: 0;
     right: 0;
-    height: 80px;
-    background: linear-gradient(to top, #f8f5f1 10%, rgba(248, 245, 241, 0));
+    height: 60px;
+    background: linear-gradient(to top, #f8f5f1 20%, rgba(248, 245, 241, 0));
     pointer-events: none; /* Let clicks pass through */
     z-index: 10;
   }
@@ -611,7 +625,8 @@
     padding-bottom: 2rem; /* Give a little breathing room at the bottom */
   }
 
-  .navArrowRight {
+  .navArrowRight,
+  .navArrowLeft {
     display: none;
   }
 }

@@ -367,9 +367,18 @@
 }
 
 /* Responsiveness */
+@media (max-width: 900px) {
+  .container {
+    padding-bottom: 90px;
+  }
+  .addFloatingBtn {
+    bottom: 6rem;
+  }
+}
+
 @media (max-width: 768px) {
   .container {
-    padding: 1.5rem;
+    padding: 1.5rem 1.5rem 90px 1.5rem;
   }
   .headerTop {
     flex-direction: column;
@@ -388,15 +397,24 @@
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
+    width: 100%;
   }
   .filters {
-    gap: 1rem;
-    flex-wrap: wrap;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  .filters::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
   }
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    column-gap: 1.5rem;
-    row-gap: 2rem;
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 1.25rem;
+    row-gap: 2.5rem;
   }
 }
 
