@@ -43,23 +43,32 @@ export const Reading = () => {
 
   const currentBook = books.find((b) => b.id === activeBookId);
 
-  // Safeguard: if book not found
-  if (!currentBook) {
-    return (
-      <div className={styles.notFoundContainer}>
-        <h2 className={styles.notFoundTitle}>Book not found or loading...</h2>
-        <Link to="/" className={styles.backLink}>
-          Back to Library
-        </Link>
-      </div>
-    );
-  }
-
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const activeRef = useRef<HTMLElement>(null);
   const textColumnRef = useRef<HTMLDivElement>(null);
+
+  // Safeguard: if book not found
+  if (!currentBook) {
+    return (
+      <div className={styles.container}>
+        <Sidebar className={`${!isSidebarOpen ? styles.sidebarHidden : ""}`} />
+        <div className={styles.mainContent}>
+          <div className={styles.emptyStateContainer}>
+            <BookOpen size={64} className={styles.emptyStateIcon} strokeWidth={1} />
+            <h2 className={styles.emptyStateTitle}>Nenhum Livro Ativo</h2>
+            <p className={styles.emptyStateSubtitle}>
+              Você não possui uma leitura em andamento. Acesse sua biblioteca ou explore novos livros para dar início a uma aventura.
+            </p>
+            <Link to="/library" className={styles.emptyStateButton}>
+              Ir para a Biblioteca
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // --- PAGINATION LOGIC ---
   const WORDS_PER_PAGE = 150;
