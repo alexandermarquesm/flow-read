@@ -68,9 +68,16 @@ Bun.serve({
     const url = new URL(req.url);
 
     // CORS Headers: Restrict to current request or frontend, with credentials enabled
-    const origin = req.headers.get("Origin") || FRONTEND_URL;
+    // CORS Headers: Support multiple origins from FRONTEND_URL
+    const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173").split(",").map(o => o.trim());
+    const requestOrigin = req.headers.get("Origin");
+    
+    // In production, strictly match against allowed origins. In dev, be more lenient.
+    const isAllowed = !requestOrigin || allowedOrigins.includes(requestOrigin);
+    const corsOrigin = (isAllowed && requestOrigin) ? requestOrigin : allowedOrigins[0];
+
     const corsHeaders = {
-      "Access-Control-Allow-Origin": process.env.NODE_ENV === "production" ? FRONTEND_URL : origin,
+      "Access-Control-Allow-Origin": corsOrigin,
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Allow-Credentials": "true",
