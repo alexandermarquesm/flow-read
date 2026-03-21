@@ -1,17 +1,16 @@
 import { log, LOG_PREFIX } from "@flow-read/shared";
-import { GetWelcomeMessageUseCase } from "../../core/use-cases/GetWelcomeMessage";
-import { TtsController } from "./controllers/TtsController";
-import { DiscoveryController } from "./controllers/DiscoveryController";
-import { ImageController } from "./controllers/ImageController";
+import { GetWelcomeMessageUseCase } from "../../use_cases/GetWelcomeMessage";
+import { TtsController } from "../../adapters/controllers/TtsController";
+import { DiscoveryController } from "../../adapters/controllers/DiscoveryController";
+import { ImageController } from "../../adapters/controllers/ImageController";
 import { config } from "../../config/config";
-import { PrismaClient } from "@prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
-import { PrismaUserRepository } from "../database/PrismaUserRepository";
+import { prisma } from "../database/prisma";
+import { PrismaUserRepository } from "../../adapters/repositories/PrismaUserRepository";
 import { BunJwtService } from "../security/BunJwtService";
-import { GoogleOAuthProvider } from "../oauth/GoogleOAuthProvider";
-import { GithubOAuthProvider } from "../oauth/GithubOAuthProvider";
-import { OAuthLoginUseCase } from "../../core/use-cases/OAuthLoginUseCase";
-import { OAuthController } from "./controllers/OAuthController";
+import { GoogleOAuthProvider } from "../../adapters/gateways/oauth/GoogleOAuthProvider";
+import { GithubOAuthProvider } from "../../adapters/gateways/oauth/GithubOAuthProvider";
+import { OAuthLoginUseCase } from "../../use_cases/OAuthLoginUseCase";
+import { OAuthController } from "../../adapters/controllers/OAuthController";
 import type { OAuthProviderService } from "../../domain/services/OAuthProviderService";
 import type { OAuthProvider } from "@flow-read/shared";
 
@@ -30,10 +29,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
-const adapter = new PrismaLibSql({
-  url: process.env.DATABASE_URL || "file:./prisma/dev.db",
-});
-const prisma = new PrismaClient({ adapter });
+
 const userRepository = new PrismaUserRepository(prisma);
 const jwtService = new BunJwtService(JWT_SECRET, JWT_EXPIRES_IN);
 

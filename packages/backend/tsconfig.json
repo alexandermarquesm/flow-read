@@ -18,7 +18,9 @@
     "types": [
       "bun-types",
       "node"
-    ]
+    ],
+    "outDir": "dist"
   },
-  "include": ["src", "tests"]
+  "include": ["src", "tests"],
+  "exclude": ["node_modules", "dist"]
 }

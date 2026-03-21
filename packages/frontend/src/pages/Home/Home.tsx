@@ -2,7 +2,7 @@ import { API_URL } from "../../config";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Play, Loader2 } from "lucide-react";
-import { WaveDecoration } from "../../components/WaveDecoration";
+import { WaveDecoration } from "../../components/WaveDecoration/WaveDecoration";
 import { Button } from "../../components/Button/Button";
 import { useReader } from "../../context/ReaderContext";
 import { CoverImage, getImageUrl } from "../../components/CoverImage/CoverImage";
