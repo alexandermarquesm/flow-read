@@ -20,7 +20,7 @@ export const CoverImage = ({ src, alt, className, style, loading, onError }: any
         />
       )}
       <img
-        src={src}
+        src={src || undefined}
         alt={alt}
         className={isLoaded ? styles.readyImage : ""}
         style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "inherit", borderRadius: "inherit", opacity: isLoaded ? 1 : 0, transition: "opacity 0.3s" }}
