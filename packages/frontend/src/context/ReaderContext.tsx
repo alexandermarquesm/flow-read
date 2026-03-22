@@ -5,7 +5,9 @@ import React, {
   useEffect,
   useCallback,
   useRef,
+  type ReactNode,
 } from "react";
+import { API_URL } from "../config";
 import {
   useSpeechSynthesis,
   type SpeechSettings,
@@ -99,9 +101,7 @@ export const useReader = () => {
 
 // Removed DEFAULT_BOOK constant
 
-export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const ReaderProvider = ({ children }: { children: ReactNode }) => {
   /* Library State */
   const [books, setBooks] = useState<Book[]>(() => {
     const saved = localStorage.getItem("flow-read-books");
@@ -123,35 +123,65 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   /* Auth State */
-  const [user, setUser] = useState<OAuthUser | null>(() => {
-    const saved = localStorage.getItem("auth_user");
-    if (saved) {
+  const [user, setUser] = useState<OAuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('auth_token'));
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = useCallback(async (authToken: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      if (response.ok) {
+        const userData: OAuthUser = await response.json();
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+      } else {
+        // Token invalid or expired
+        logout();
+      }
+    } catch (err) {
+      console.error('Failed to fetch user profile', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('auth_token');
+    const storedUser = localStorage.getItem('user');
+
+    if (storedUser) {
       try {
-        return JSON.parse(saved);
+        setUser(JSON.parse(storedUser));
       } catch (e) {
-        return null;
+        console.error('Failed to parse stored user', e);
       }
     }
-    return null;
-  });
 
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem("auth_token");
-  });
+    if (storedToken) {
+      fetchProfile(storedToken);
+    } else {
+      setLoading(false);
+    }
+  }, [fetchProfile]);
 
   const login = useCallback((userData: OAuthUser, tokenData?: string) => {
     setUser(userData);
-    localStorage.setItem("auth_user", JSON.stringify(userData));
+    localStorage.setItem("user", JSON.stringify(userData)); // Changed from auth_user to user
     if (tokenData) {
       setToken(tokenData);
       localStorage.setItem("auth_token", tokenData);
+      fetchProfile(tokenData); // Trigger fetch profile after login
     }
-  }, []);
+  }, [fetchProfile]);
 
   const logout = useCallback(() => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem("auth_user");
+    localStorage.removeItem("user"); // Changed from auth_user to user
     localStorage.removeItem("auth_token");
     window.location.href = "/";
   }, []);
@@ -539,10 +569,26 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     // Utils
     showToast,
   }), [
-    text, segments, currentSegmentId, currentSegmentIndex, currentWordCharIndex, isReadingSequence, 
+    text, segments, currentSegmentId, currentSegmentIndex, currentWordCharIndex,
     isSpeaking, isPaused, isSynthesizing, isProcessingText, highlightEnabled, settings, voices, loadVoices,
-    books, activeBookId, synthResume, handleBoundary, handleSegmentEnd
+    books, activeBookId, user, token, login, logout, showToast
   ]);
+
+  if (loading && token && !user) {
+    return (
+      <div style={{ 
+        height: '100vh', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        backgroundColor: '#fdfcfb',
+        color: '#8d6e63',
+        fontFamily: 'var(--font-ui)'
+      }}>
+        Loading profile...
+      </div>
+    );
+  }
 
   return (
     <ReaderContext.Provider value={value}>

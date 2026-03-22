@@ -12,6 +12,7 @@ import { GoogleOAuthProvider } from "../../adapters/gateways/oauth/GoogleOAuthPr
 import { GithubOAuthProvider } from "../../adapters/gateways/oauth/GithubOAuthProvider";
 import { OAuthLoginUseCase } from "../../use_cases/OAuthLoginUseCase";
 import { OAuthController } from "../../adapters/controllers/OAuthController";
+import { MeController } from "../../adapters/controllers/MeController";
 import type { OAuthProviderService } from "../../domain/services/OAuthProviderService";
 import type { OAuthProvider } from "@flow-read/shared";
 
@@ -52,6 +53,7 @@ if (config.auth.github.clientId && config.auth.github.clientSecret) {
 
 const loginUseCase = new OAuthLoginUseCase(userRepository, providerServices, jwtService);
 const oauthController = new OAuthController(loginUseCase, providerServices, config.frontend.mainUrl);
+const meController = new MeController(userRepository, jwtService);
 // ------------------
 
 Bun.serve({
@@ -188,6 +190,15 @@ Bun.serve({
       });
     }
     // -------------------
+
+    // API Routes via Controller
+    if (url.pathname === "/api/auth/me" && req.method === "GET") {
+      const response = await meController.getProfile(req);
+      Object.entries(corsHeaders).forEach(([k, v]) => {
+        response.headers.set(k, v);
+      });
+      return response;
+    }
 
     // API Routes via Controller
     if (url.pathname === "/api/voices" && req.method === "GET") {

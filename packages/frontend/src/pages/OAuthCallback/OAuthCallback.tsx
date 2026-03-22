@@ -8,20 +8,28 @@ export const OAuthCallback = () => {
   const { login } = useReader();
 
   useEffect(() => {
-    const userStr = searchParams.get("user");
     const token = searchParams.get("token");
+    const userStr = searchParams.get("user"); // Legacy fallback
 
-    if (userStr) {
+    if (token) {
+      // ReaderContext will fetch the profile automatically when login() is called or on mount
+      let userData = null;
+      if (userStr) {
+        try { userData = JSON.parse(userStr); } catch (e) {}
+      }
+      
+      login(userData, token);
+      
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 100);
+    } else if (userStr) {
+      // Legacy behavior for backward compatibility during deployment
       try {
         const userData = JSON.parse(userStr);
-        login(userData, token || undefined);
-        
-        // Full page reload after small delay to ensure persistence
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 100);
+        login(userData);
+        setTimeout(() => { window.location.href = "/"; }, 100);
       } catch (e) {
-        console.error("Failed to parse user data", e);
         navigate("/?error=Invalid%20user%20data");
       }
     } else {
