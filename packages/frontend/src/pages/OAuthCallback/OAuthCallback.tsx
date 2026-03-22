@@ -9,22 +9,25 @@ export const OAuthCallback = () => {
 
   useEffect(() => {
     const token = searchParams.get("token");
-    const userStr = searchParams.get("user"); // Legacy fallback
+    const userStr = searchParams.get("user");
+    
+    console.log('[Auth Callback] Params:', { token: token ? 'yes' : 'no', user: userStr ? 'yes' : 'no' });
 
     if (token) {
-      // ReaderContext will fetch the profile automatically when login() is called or on mount
       let userData = null;
       if (userStr) {
-        try { userData = JSON.parse(userStr); } catch (e) {}
+        try { userData = JSON.parse(userStr); } catch (e) { console.error('[Auth Callback] User parse fail', e); }
       }
       
+      console.log('[Auth Callback] Calling login()...');
       login(userData, token);
       
+      console.log('[Auth Callback] Redirecting to home...');
       setTimeout(() => {
         window.location.href = "/";
       }, 100);
     } else if (userStr) {
-      // Legacy behavior for backward compatibility during deployment
+      console.log('[Auth Callback] Legacy user string found...');
       try {
         const userData = JSON.parse(userStr);
         login(userData);
@@ -33,6 +36,7 @@ export const OAuthCallback = () => {
         navigate("/?error=Invalid%20user%20data");
       }
     } else {
+      console.warn('[Auth Callback] No token or user found in URL');
       navigate("/?error=Authentication%20failed");
     }
   }, [searchParams, navigate, login]);

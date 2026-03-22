@@ -65,15 +65,13 @@ Bun.serve({
     // CORS Headers: Support multiple origins from FRONTEND_URL
     const requestOrigin = req.headers.get("Origin")?.replace(/\/$/, "");
     
-    // Check if origin is allowed
-    const isAllowed = !requestOrigin || config.frontend.urls.includes(requestOrigin);
-    
-    // Use actual origin if allowed, otherwise fallback to first allowed origin
-    const finalOrigin = isAllowed && requestOrigin ? req.headers.get("Origin")! : config.frontend.urls[0];
+    const origin = req.headers.get("Origin");
+    const allowedUrls = config.frontend.urls;
+    const corsOrigin = (origin && allowedUrls.includes(origin)) ? origin : allowedUrls[0];
 
     const corsHeaders = {
-      "Access-Control-Allow-Origin": finalOrigin,
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Origin": corsOrigin,
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Allow-Credentials": "true",
     };

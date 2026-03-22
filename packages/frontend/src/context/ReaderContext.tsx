@@ -128,6 +128,7 @@ export const ReaderProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (authToken: string) => {
+    console.log('[Auth] Fetching profile from /api/auth/me...');
     try {
       const response = await fetch(`${API_URL}/api/auth/me`, {
         headers: {
@@ -136,14 +137,17 @@ export const ReaderProvider = ({ children }: { children: ReactNode }) => {
       });
       if (response.ok) {
         const userData: OAuthUser = await response.json();
+        console.log('[Auth] Profile fetched successfully:', userData.email);
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
-      } else {
-        // Token invalid or expired
+      } else if (response.status === 401 || response.status === 403) {
+        console.warn('[Auth] Token invalid or expired. Logging out.');
         logout();
+      } else {
+        console.warn(`[Auth] Backend returned non-200 status: ${response.status}`);
       }
     } catch (err) {
-      console.error('Failed to fetch user profile', err);
+      console.error('[Auth Error] Failed to fetch user profile (Network error):', err);
     } finally {
       setLoading(false);
     }
@@ -168,13 +172,16 @@ export const ReaderProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [fetchProfile]);
 
-  const login = useCallback((userData: OAuthUser, tokenData?: string) => {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData)); // Changed from auth_user to user
+  const login = useCallback((userData: OAuthUser|null, tokenData?: string) => {
+    console.log('[Auth] login() called', { hasUser: !!userData, hasToken: !!tokenData });
+    if (userData) {
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+    }
     if (tokenData) {
       setToken(tokenData);
       localStorage.setItem("auth_token", tokenData);
-      fetchProfile(tokenData); // Trigger fetch profile after login
+      fetchProfile(tokenData);
     }
   }, [fetchProfile]);
 
