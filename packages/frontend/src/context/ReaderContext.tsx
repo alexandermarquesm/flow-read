@@ -153,6 +153,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     setToken(null);
     localStorage.removeItem("auth_user");
     localStorage.removeItem("auth_token");
+    window.location.href = "/";
   }, []);
 
   // 1. Persist Books with DEBOUNCE and error handling

@@ -15,7 +15,11 @@ export const OAuthCallback = () => {
       try {
         const userData = JSON.parse(userStr);
         login(userData, token || undefined);
-        navigate("/");
+        
+        // Full page reload after small delay to ensure persistence
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 100);
       } catch (e) {
         console.error("Failed to parse user data", e);
         navigate("/?error=Invalid%20user%20data");
