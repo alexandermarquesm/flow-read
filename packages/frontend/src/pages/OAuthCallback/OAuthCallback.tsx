@@ -14,6 +14,8 @@ export const OAuthCallback = () => {
     console.log('[Auth Callback] Params:', { token: token ? 'yes' : 'no', user: userStr ? 'yes' : 'no' });
 
     if (token) {
+      console.log('[Auth Callback] Token found:', token.substring(0, 10) + '...');
+      
       let userData = null;
       if (userStr) {
         try { userData = JSON.parse(userStr); } catch (e) { console.error('[Auth Callback] User parse fail', e); }

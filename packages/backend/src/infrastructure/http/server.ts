@@ -62,12 +62,10 @@ Bun.serve({
   async fetch(req) {
     const url = new URL(req.url);
 
-    // CORS Headers: Support multiple origins from FRONTEND_URL
-    const requestOrigin = req.headers.get("Origin")?.replace(/\/$/, "");
-    
     const origin = req.headers.get("Origin");
-    const allowedUrls = config.frontend.urls;
-    const corsOrigin = (origin && allowedUrls.includes(origin)) ? origin : allowedUrls[0];
+    const allowedUrls = config.frontend.urls.map(u => u.replace(/\/$/, ""));
+    const normalizedOrigin = origin?.replace(/\/$/, "");
+    const corsOrigin = (normalizedOrigin && allowedUrls.includes(normalizedOrigin)) ? origin! : allowedUrls[0];
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": corsOrigin,
