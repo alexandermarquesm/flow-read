@@ -1,4 +1,5 @@
 import { log, LOG_PREFIX } from "@flow-read/shared";
+import jwt from "jsonwebtoken";
 import { GetWelcomeMessageUseCase } from "../../use_cases/GetWelcomeMessage";
 import { TtsController } from "../../adapters/controllers/TtsController";
 import { DiscoveryController } from "../../adapters/controllers/DiscoveryController";
@@ -101,16 +102,18 @@ Bun.serve({
     if (authStartMatch && req.method === "GET") {
       const provider = authStartMatch[1] as OAuthProvider;
       const state = crypto.randomUUID();
-
-      const authUrl = oauthController.getAuthUrl(provider, state);
+      // Stateless state: sign it with JWT_SECRET
+      const signedState = jwt.sign({ state, exp: Math.floor(Date.now() / 1000) + 3600 }, config.auth.jwtSecret);
+      const authUrl = oauthController.getAuthUrl(provider, signedState);
+      
       if (authUrl) {
-        const isProd = config.env === "production";
         return new Response(null, {
           status: 302,
           headers: {
             ...corsHeaders,
             Location: authUrl,
-            "Set-Cookie": `oauth_state=${state}; HttpOnly; Path=/; Max-Age=3600; SameSite=Lax${isProd ? "; Secure" : ""}`,
+            // Keep the cookie as fallback for local dev
+            "Set-Cookie": `oauth_state=${state}; HttpOnly; Path=/; Max-Age=3600; SameSite=Lax`,
           },
         });
       } else {
@@ -126,14 +129,28 @@ Bun.serve({
       const provider = authCallbackMatch[1] as OAuthProvider;
       const code = url.searchParams.get("code");
       const urlState = url.searchParams.get("state");
+      const cookieHeader = req.headers.get("Cookie") || "";
+      const cookieState = cookieHeader.match(/(?:^|; )oauth_state=([^;]*)/)?.[1];
 
-      const cookieHeader = req.headers.get("Cookie");
-      const cookieState = cookieHeader?.match(/oauth_state=([^;]+)/)?.[1];
+      let isStateValid = false;
+      if (urlState) {
+        if (urlState === cookieState) {
+          isStateValid = true;
+          log(`[Auth] Cookie state verified successfully`);
+        } else {
+          try {
+            // Try to verify as signed state (JWT)
+            jwt.verify(urlState, config.auth.jwtSecret);
+            isStateValid = true;
+            log(`[Auth] Stateless (signed) state verified successfully`);
+          } catch (e) {
+            log(`[Auth Error] State verification failed: ${e instanceof Error ? e.message : 'Unknown'}`);
+          }
+        }
+      }
 
-      log(`[Auth] Callback state: url=${urlState}, cookie=${cookieState}`);
-
-      if (!urlState || urlState !== cookieState) {
-        log(`[Auth Error] State mismatch: url=${urlState}, cookie=${cookieState}`);
+      if (!isStateValid) {
+        log(`[Auth Error] State mismatch or missing: url=${urlState}, cookie=${cookieState}`);
         const errorUrl = new URL(config.frontend.mainUrl);
         errorUrl.searchParams.set("error", "Invalid session state. Please try again.");
         return new Response(null, {
