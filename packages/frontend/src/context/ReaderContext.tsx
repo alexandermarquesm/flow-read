@@ -13,6 +13,7 @@ import {
 } from "../hooks/useSpeechSynthesis";
 import { processTextAsync, type TextSegment } from "../utils/textProcessor";
 import { Toast } from "../components/Toast/Toast";
+import type { OAuthUser } from "@flow-read/shared";
 
 export interface Book {
   id: string;
@@ -78,6 +79,12 @@ interface ReaderContextType {
   updateBookProgress: (bookId: string, segmentIndex: number) => void;
   removeBook: (bookId: string) => void;
   showToast: (message: string, type?: "info" | "success" | "warning" | "error") => void;
+
+  // Auth State
+  user: OAuthUser | null;
+  token: string | null;
+  login: (user: OAuthUser, token?: string) => void;
+  logout: () => void;
 }
 
 const ReaderContext = createContext<ReaderContextType | undefined>(undefined);
@@ -114,6 +121,39 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     const saved = localStorage.getItem("flow-read-active-book");
     return saved || null;
   });
+
+  /* Auth State */
+  const [user, setUser] = useState<OAuthUser | null>(() => {
+    const saved = localStorage.getItem("auth_user");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem("auth_token");
+  });
+
+  const login = useCallback((userData: OAuthUser, tokenData?: string) => {
+    setUser(userData);
+    localStorage.setItem("auth_user", JSON.stringify(userData));
+    if (tokenData) {
+      setToken(tokenData);
+      localStorage.setItem("auth_token", tokenData);
+    }
+  }, []);
+
+  const logout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem("auth_user");
+    localStorage.removeItem("auth_token");
+  }, []);
 
   // 1. Persist Books with DEBOUNCE and error handling
   useEffect(() => {
@@ -490,6 +530,11 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({
     selectBook,
     updateBookProgress,
     removeBook,
+    // Auth
+    user,
+    token,
+    login,
+    logout,
     // Utils
     showToast,
   }), [

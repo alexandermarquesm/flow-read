@@ -7,21 +7,23 @@ import { API_URL } from "../../config";
 import styles from "./LoginModal.module.css";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
+import { useReader } from "../../context/ReaderContext";
+
 export const LoginModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useReader();
   const error = searchParams.get("error");
 
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);
-    const handleAuthChange = () => {
-      const user = localStorage.getItem("auth_user");
-      if (user) setIsOpen(false);
-    };
-
     window.addEventListener("open_login_modal", handleOpen);
-    window.addEventListener("auth_change", handleAuthChange);
+    
+    // Close modal if user is logged in and no new error is present
+    if (user && !error) {
+      setIsOpen(false);
+    }
     
     if (error) {
       setIsOpen(true);
@@ -29,20 +31,21 @@ export const LoginModal = () => {
     
     return () => {
       window.removeEventListener("open_login_modal", handleOpen);
-      window.removeEventListener("auth_change", handleAuthChange);
     };
-  }, [error]);
+  }, [error, user]);
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
-      if (error) {
+      if (error && !localStorage.getItem("auth_user")) {
+        // Clear error from URL if user closes the modal without logging in
+        // Only if they aren't logged in (otherwise the redirect from callback has error parameter sometimes?)
+        // Actually, if we are on / but have error, navigating to / removes the query
         navigate(window.location.pathname, { replace: true });
       }
     }
-    // Cleanup if component unmounts
     return () => { document.body.style.overflow = "unset"; };
   }, [isOpen, error, navigate]);
 

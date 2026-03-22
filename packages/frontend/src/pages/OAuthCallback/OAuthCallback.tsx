@@ -1,26 +1,29 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useReader } from "../../context/ReaderContext";
 
 export const OAuthCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { login } = useReader();
 
   useEffect(() => {
     const userStr = searchParams.get("user");
     const token = searchParams.get("token");
 
     if (userStr) {
-      localStorage.setItem("auth_user", userStr);
-      if (token) {
-        localStorage.setItem("auth_token", token);
+      try {
+        const userData = JSON.parse(userStr);
+        login(userData, token || undefined);
+        navigate("/");
+      } catch (e) {
+        console.error("Failed to parse user data", e);
+        navigate("/?error=Invalid%20user%20data");
       }
-      // Dispatches an event so other components (like Sidebar) can update
-      window.dispatchEvent(new Event("auth_change"));
-      navigate("/");
     } else {
       navigate("/?error=Authentication%20failed");
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, login]);
 
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", fontFamily: "var(--font-ui)", color: "#8d6e63" }}>

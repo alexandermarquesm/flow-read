@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   BookOpen,
@@ -9,9 +8,9 @@ import {
   LogOut,
   User as UserIcon
 } from "lucide-react";
-import type { OAuthUser } from "@flow-read/shared";
 import { Button } from "../Button/Button";
 import styles from "./Sidebar.module.css";
+import { useReader } from "../../context/ReaderContext";
 
 interface SidebarProps {
   className?: string; // Allow external layout to affect positioning/visibility
@@ -20,33 +19,11 @@ interface SidebarProps {
 
 export const Sidebar = ({ className, style }: SidebarProps) => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<OAuthUser | null>(null);
-
-  const loadUser = () => {
-    const userStr = localStorage.getItem("auth_user");
-    if (userStr) {
-      try {
-        setUser(JSON.parse(userStr));
-      } catch (e) {
-        setUser(null);
-      }
-    } else {
-      setUser(null);
-    }
-  };
-
-  useEffect(() => {
-    loadUser();
-    window.addEventListener("auth_change", loadUser);
-    return () => window.removeEventListener("auth_change", loadUser);
-  }, []);
+  const { user, logout } = useReader();
 
   const handleLogout = () => {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("auth_user");
-    setUser(null);
-    window.dispatchEvent(new Event("auth_change"));
-    navigate("/login");
+    logout();
+    navigate("/");
   };
 
   return (
