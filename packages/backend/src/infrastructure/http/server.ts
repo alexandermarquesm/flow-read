@@ -58,21 +58,34 @@ const meController = new MeController(userRepository, jwtService);
 
 Bun.serve({
   port: config.port,
-  idleTimeout: 120, // Aumentado para 2 minutos para permitir que a IA do Python processe livros grandes
+  idleTimeout: 120,
   async fetch(req) {
-    const url = new URL(req.url);
+    try {
+      const url = new URL(req.url);
 
-    const origin = req.headers.get("Origin");
-    const allowedUrls = config.frontend.urls.map(u => u.replace(/\/$/, ""));
-    const normalizedOrigin = origin?.replace(/\/$/, "");
-    const corsOrigin = (normalizedOrigin && allowedUrls.includes(normalizedOrigin)) ? origin! : allowedUrls[0];
+      const origin = req.headers.get("Origin");
+      const allowedUrls = config.frontend.urls.map(u => u.replace(/\/$/, ""));
+      const normalizedOrigin = origin?.replace(/\/$/, "");
+      const corsOrigin = (normalizedOrigin && allowedUrls.includes(normalizedOrigin)) ? origin! : allowedUrls[0];
 
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": corsOrigin,
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Credentials": "true",
-    };
+      const corsHeaders = {
+        "Access-Control-Allow-Origin": corsOrigin,
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true",
+      };
+
+      // --- Health & Diagnostic ---
+      if (url.pathname === "/api/health") {
+        return new Response(JSON.stringify({ 
+          status: "OK", 
+          env: config.env,
+          uptime: process.uptime(),
+          version: "1.2.1-diagnostic"
+        }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
 
     if (req.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
@@ -248,5 +261,25 @@ Bun.serve({
     }
 
     return new Response("Not Found", { status: 404, headers: corsHeaders });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.stack : String(err);
+      log(`[CRITICAL ERROR] Unhandled exception: ${errorMsg}`);
+      
+      // Fallback CORS headers in case they weren't initialized
+      const fallbackCors = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "*",
+        "Access-Control-Allow-Headers": "*"
+      };
+
+      return new Response(JSON.stringify({ 
+        error: "Internal Server Error", 
+        message: err instanceof Error ? err.message : "Unknown error",
+        stack: errorMsg 
+      }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...fallbackCors }
+      });
+    }
   },
 });
