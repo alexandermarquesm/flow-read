@@ -125,6 +125,7 @@ export const ReaderProvider = ({ children }: { children: ReactNode }) => {
   /* Auth State */
   const [user, setUser] = useState<OAuthUser | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('auth_token'));
+
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (authToken: string) => {
@@ -537,6 +538,27 @@ export const ReaderProvider = ({ children }: { children: ReactNode }) => {
   const showToast = (message: string, type: "info" | "success" | "warning" | "error" = "info") => {
     setToastState({ message, type });
   };
+
+  useEffect(() => {
+    const handleAuthMessage = (event: MessageEvent) => {
+      // Security check: ensure the message comes from our own origin
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data?.type === "AUTH_SUCCESS") {
+        const { token, user } = event.data;
+        if (token) {
+          console.log('[Auth] Received success message via postMessage');
+          login(user, token);
+          showToast("Successfully logged in!", "success");
+        }
+      } else if (event.data?.type === "AUTH_ERROR") {
+        showToast(event.data.error || "Authentication failed", "error");
+      }
+    };
+
+    window.addEventListener("message", handleAuthMessage);
+    return () => window.removeEventListener("message", handleAuthMessage);
+  }, [login, showToast]);
 
   const value = React.useMemo(() => ({
     text,

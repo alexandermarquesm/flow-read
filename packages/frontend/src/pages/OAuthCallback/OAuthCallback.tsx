@@ -11,35 +11,33 @@ export const OAuthCallback = () => {
     const token = searchParams.get("token");
     const userStr = searchParams.get("user");
     
-    console.log('[Auth Callback] Params:', { token: token ? 'yes' : 'no', user: userStr ? 'yes' : 'no' });
+    console.log('[Auth Callback Popup] Params:', { token: token ? 'yes' : 'no', user: userStr ? 'yes' : 'no' });
 
     if (token) {
-      console.log('[Auth Callback] Token found:', token.substring(0, 10) + '...');
-      
       let userData = null;
       if (userStr) {
         try { userData = JSON.parse(userStr); } catch (e) { console.error('[Auth Callback] User parse fail', e); }
       }
       
-      console.log('[Auth Callback] Calling login()...');
-      login(userData, token);
-      
-      console.log('[Auth Callback] Redirecting to home...');
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 100);
-    } else if (userStr) {
-      console.log('[Auth Callback] Legacy user string found...');
-      try {
-        const userData = JSON.parse(userStr);
-        login(userData);
+      if (window.opener) {
+        console.log('[Auth Callback Popup] Sending success to opener...');
+        window.opener.postMessage({ type: "AUTH_SUCCESS", token, user: userData }, window.location.origin);
+        window.close();
+      } else {
+        // Fallback for direct access (not a popup)
+        console.log('[Auth Callback Popup] No opener found, using direct login');
+        login(userData, token);
         setTimeout(() => { window.location.href = "/"; }, 100);
-      } catch (e) {
-        navigate("/?error=Invalid%20user%20data");
       }
     } else {
-      console.warn('[Auth Callback] No token or user found in URL');
-      navigate("/?error=Authentication%20failed");
+      const error = searchParams.get("error") || "Authentication failed";
+      console.warn('[Auth Callback Popup] Error:', error);
+      if (window.opener) {
+        window.opener.postMessage({ type: "AUTH_ERROR", error }, window.location.origin);
+        window.close();
+      } else {
+        navigate(`/?error=${encodeURIComponent(error)}`);
+      }
     }
   }, [searchParams, navigate, login]);
 

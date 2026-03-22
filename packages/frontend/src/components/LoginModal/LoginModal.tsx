@@ -52,11 +52,27 @@ export const LoginModal = () => {
   const handleClose = () => setIsOpen(false);
 
   const handleGoogleLogin = () => {
-    window.location.href = `${API_URL}/api/auth/google`;
+    const width = 500;
+    const height = 600;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    window.open(
+      `${API_URL}/api/auth/google`,
+      "google-login",
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
   };
 
   const handleGithubLogin = () => {
-    window.location.href = `${API_URL}/api/auth/github`;
+    const width = 500;
+    const height = 600;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    window.open(
+      `${API_URL}/api/auth/github`,
+      "github-login",
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
   };
 
   if (typeof document === "undefined") return null;
