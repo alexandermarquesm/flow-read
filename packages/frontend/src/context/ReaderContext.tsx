@@ -7,7 +7,7 @@ import React, {
   useRef,
   type ReactNode,
 } from "react";
-import { API_URL } from "../config";
+// import { API_URL } from "../config"; // Removed auth
 import {
   useSpeechSynthesis,
   type SpeechSettings,
@@ -15,7 +15,7 @@ import {
 } from "../hooks/useSpeechSynthesis";
 import { processTextAsync, type TextSegment } from "../utils/textProcessor";
 import { Toast } from "../components/Toast/Toast";
-import type { OAuthUser } from "@flow-read/shared";
+// import type { OAuthUser } from "@flow-read/shared"; // Removed auth
 
 export interface Book {
   id: string;
@@ -82,11 +82,11 @@ interface ReaderContextType {
   removeBook: (bookId: string) => void;
   showToast: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 
-  // Auth State
-  user: OAuthUser | null;
-  token: string | null;
-  login: (user: OAuthUser, token?: string) => void;
-  logout: () => void;
+  // Auth State (REMOVED)
+  // user: OAuthUser | null;
+  // token: string | null;
+  // login: (user: OAuthUser, token?: string) => void;
+  // logout: () => void;
 }
 
 const ReaderContext = createContext<ReaderContextType | undefined>(undefined);
@@ -122,77 +122,7 @@ export const ReaderProvider = ({ children }: { children: ReactNode }) => {
     return saved || null;
   });
 
-  /* Auth State */
-  const [user, setUser] = useState<OAuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('auth_token'));
-
-  const [loading, setLoading] = useState(true);
-
-  const fetchProfile = useCallback(async (authToken: string) => {
-    console.log('[Auth] Fetching profile from /api/auth/me...');
-    try {
-      const response = await fetch(`${API_URL}/api/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-      if (response.ok) {
-        const userData: OAuthUser = await response.json();
-        console.log('[Auth] Profile fetched successfully:', userData.email);
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-      } else if (response.status === 401 || response.status === 403) {
-        console.warn('[Auth] Token invalid or expired. Logging out.');
-        logout();
-      } else {
-        console.warn(`[Auth] Backend returned non-200 status: ${response.status}`);
-      }
-    } catch (err) {
-      console.error('[Auth Error] Failed to fetch user profile (Network error):', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem('auth_token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Failed to parse stored user', e);
-      }
-    }
-
-    if (storedToken) {
-      fetchProfile(storedToken);
-    } else {
-      setLoading(false);
-    }
-  }, [fetchProfile]);
-
-  const login = useCallback((userData: OAuthUser|null, tokenData?: string) => {
-    console.log('[Auth] login() called', { hasUser: !!userData, hasToken: !!tokenData });
-    if (userData) {
-      setUser(userData);
-      localStorage.setItem("user", JSON.stringify(userData));
-    }
-    if (tokenData) {
-      setToken(tokenData);
-      localStorage.setItem("auth_token", tokenData);
-      fetchProfile(tokenData);
-    }
-  }, [fetchProfile]);
-
-  const logout = useCallback(() => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem("user"); // Changed from auth_user to user
-    localStorage.removeItem("auth_token");
-    window.location.href = "/";
-  }, []);
+  // Auth State (REMOVED)
 
   // 1. Persist Books with DEBOUNCE and error handling
   useEffect(() => {
@@ -539,43 +469,6 @@ export const ReaderProvider = ({ children }: { children: ReactNode }) => {
     setToastState({ message, type });
   };
 
-  useEffect(() => {
-    const syncAuth = (event: StorageEvent) => {
-      if (event.key === 'auth_pending_data') {
-        try {
-          const data = JSON.parse(event.newValue || '');
-          if (data?.token) {
-            console.log('[Auth] Syncing credentials from localStorage event');
-            login(data.user, data.token);
-            localStorage.removeItem('auth_pending_data');
-            showToast("Successfully logged in!", "success");
-          }
-        } catch (e) {}
-      }
-    };
-
-    const handleAuthMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-
-      if (event.data?.type === "AUTH_SUCCESS") {
-        const { token, user } = event.data;
-        if (token) {
-          console.log('[Auth] Received success message via postMessage');
-          login(user, token);
-          showToast("Successfully logged in!", "success");
-        }
-      } else if (event.data?.type === "AUTH_ERROR") {
-        showToast(event.data.error || "Authentication failed", "error");
-      }
-    };
-
-    window.addEventListener("message", handleAuthMessage);
-    window.addEventListener("storage", syncAuth);
-    return () => {
-      window.removeEventListener("message", handleAuthMessage);
-      window.removeEventListener("storage", syncAuth);
-    };
-  }, [login, showToast]);
 
   const value = React.useMemo(() => ({
     text,
@@ -607,36 +500,14 @@ export const ReaderProvider = ({ children }: { children: ReactNode }) => {
     selectBook,
     updateBookProgress,
     removeBook,
-    // Auth
-    user,
-    token,
-    login,
-    logout,
     // Utils
     showToast,
   }), [
     text, segments, currentSegmentId, currentSegmentIndex, currentWordCharIndex,
     isSpeaking, isPaused, isSynthesizing, isProcessingText, highlightEnabled, settings, voices, loadVoices,
-    books, activeBookId, user, token, login, logout, showToast
+    books, activeBookId, showToast
   ]);
 
-  const isAuthCallback = window.location.pathname.includes('/auth/callback');
-
-  if (loading && token && !user && !isAuthCallback) {
-    return (
-      <div style={{ 
-        height: '100vh', 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        backgroundColor: '#fdfcfb',
-        color: '#8d6e63',
-        fontFamily: 'var(--font-ui)'
-      }}>
-        Loading profile...
-      </div>
-    );
-  }
 
   return (
     <ReaderContext.Provider value={value}>

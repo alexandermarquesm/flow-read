@@ -9,6 +9,7 @@ export class BiblioCliDiscoveryRepository implements IDiscoveryRepository {
   private baseUrl = config.discovery.baseUrl;
 
   private async safeFetch(url: string, options?: RequestInit): Promise<Response> {
+    log(`[Discovery] Calling: ${url}`);
     try {
       const response = await fetch(url, options);
       return response;

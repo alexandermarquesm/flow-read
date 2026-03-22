@@ -5,6 +5,7 @@
   "types": "./src/index.ts",
   "scripts": {
     "test": "bun test",
+    "build": "echo 'No build step needed for shared'",
     "clean": "rm -rf dist coverage"
   },
   "devDependencies": {

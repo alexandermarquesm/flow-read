@@ -8,16 +8,13 @@
     "start": "NODE_ENV=production PORT=4000 bun run src/index.ts",
     "test": "bun test",
     "clean": "rm -rf dist coverage",
-    "build": "prisma generate",
-    "postinstall": "prisma generate"
+    "build": "bun run build:shared",
+    "build:shared": "cd ../shared && bun run build"
   },
   "dependencies": {
     "@flow-read/shared": "workspace:*",
     "@google-cloud/text-to-speech": "^5.0.1",
     "@google/genai": "^1.41.0",
-    "@libsql/client": "^0.17.2",
-    "@prisma/adapter-libsql": "^7.5.0",
-    "@prisma/client": "^7.5.0",
     "@types/sharp": "^0.32.0",
     "@types/ws": "^8.18.1",
     "cors": "^2.8.5",
@@ -32,8 +29,6 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "prisma": "^7.5.0",
-    "@prisma/config": "^7.5.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/cors": "^2.8.17",
     "@types/mime": "^4.0.0",
