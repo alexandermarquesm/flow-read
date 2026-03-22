@@ -1,8 +1,11 @@
 import dotenv from "dotenv";
 import path from "path";
 
+// Load environment variables from the package directory itself
 const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".env";
-dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+// We resolve relative to this file to be robust against where the process is started from
+const envPath = path.resolve(import.meta.dirname, "../../", envFile);
+dotenv.config({ path: envPath });
 
 export const config = {
   env: process.env.NODE_ENV || "development",
