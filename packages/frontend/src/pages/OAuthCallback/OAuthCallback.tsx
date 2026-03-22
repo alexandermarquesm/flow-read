@@ -7,10 +7,13 @@ export const OAuthCallback = () => {
 
   useEffect(() => {
     const userStr = searchParams.get("user");
+    const token = searchParams.get("token");
 
-    // O Token agora está seguro dentro do navegador via Cookie HttpOnly!
     if (userStr) {
       localStorage.setItem("auth_user", userStr);
+      if (token) {
+        localStorage.setItem("auth_token", token);
+      }
       // Dispatches an event so other components (like Sidebar) can update
       window.dispatchEvent(new Event("auth_change"));
       navigate("/");

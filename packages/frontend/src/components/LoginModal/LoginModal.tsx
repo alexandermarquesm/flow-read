@@ -15,13 +15,22 @@ export const LoginModal = () => {
 
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);
+    const handleAuthChange = () => {
+      const user = localStorage.getItem("auth_user");
+      if (user) setIsOpen(false);
+    };
+
     window.addEventListener("open_login_modal", handleOpen);
+    window.addEventListener("auth_change", handleAuthChange);
     
     if (error) {
       setIsOpen(true);
     }
     
-    return () => window.removeEventListener("open_login_modal", handleOpen);
+    return () => {
+      window.removeEventListener("open_login_modal", handleOpen);
+      window.removeEventListener("auth_change", handleAuthChange);
+    };
   }, [error]);
 
   useEffect(() => {

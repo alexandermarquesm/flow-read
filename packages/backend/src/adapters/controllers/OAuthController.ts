@@ -27,6 +27,9 @@ export class OAuthController {
       // We return the token separately so the server can set an HttpOnly cookie
       const redirectUrl = new URL(`${this.frontendUrl}/auth/callback`);
       redirectUrl.searchParams.set("user", JSON.stringify(authResult.user));
+      if (authResult.token) {
+        redirectUrl.searchParams.set("token", authResult.token);
+      }
       return { redirectUrl: redirectUrl.toString(), token: authResult.token };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "OAuthLoginFailed";
