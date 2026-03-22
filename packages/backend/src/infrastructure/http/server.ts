@@ -129,8 +129,11 @@ Bun.serve({
       const cookieHeader = req.headers.get("Cookie");
       const cookieState = cookieHeader?.match(/oauth_state=([^;]+)/)?.[1];
 
+      log(`[Auth] Callback state: url=${urlState}, cookie=${cookieState}`);
+
       if (!urlState || urlState !== cookieState) {
-        return new Response("Invalid state parameter. Potential CSRF attack.", {
+        log(`[Auth Error] State mismatch: url=${urlState}, cookie=${cookieState}`);
+        return new Response(`Invalid state parameter. Potential CSRF attack. URL State: ${urlState}, Cookie State: ${cookieState}`, {
           status: 400, headers: corsHeaders,
         });
       }
@@ -141,7 +144,9 @@ Bun.serve({
         });
       }
 
+      log(`[Auth] Proceeding to handleCallback for ${provider}...`);
       const result = await oauthController.handleCallback(provider, code);
+      log(`[Auth] handleCallback finished. Redirecting to: ${result?.redirectUrl}`);
       if (result) {
         const headers: Record<string, string> = {
           ...corsHeaders,

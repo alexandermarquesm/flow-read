@@ -21,13 +21,17 @@ export class OAuthLoginUseCase {
     }
 
     // 1. Exchange code for profile data
+    console.log(`[OAuth UseCase] GET profile for ${providerName}...`);
     const profile = await providerService.getProfileFromCode(code);
+    console.log(`[OAuth UseCase] Got profile: ${profile.email}`);
 
     // 2. Check if user already exists
+    console.log(`[OAuth UseCase] Searching for user by providerId: ${profile.providerId}...`);
     let user = await this.userRepository.findByProviderId(
       providerName,
       profile.providerId,
     );
+    console.log(`[OAuth UseCase] User search result: ${user ? "Existing" : "New"}`);
 
     if (user) {
       // 3a. Update existing user's profile info

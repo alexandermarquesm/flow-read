@@ -42,10 +42,14 @@ export class GithubOAuthProvider implements OAuthProviderService {
     );
 
     if (!tokenResponse.ok) {
-      throw new Error(`GitHub token error: ${await tokenResponse.text()}`);
+      const errorText = await tokenResponse.text();
+      console.error(`[GitHub Auth Error] Token exchange failed: ${errorText}`);
+      throw new Error(`GitHub token error: ${errorText}`);
     }
 
-    const { access_token } = (await tokenResponse.json()) as any;
+    const data = await tokenResponse.json() as any;
+    console.log(`[GitHub Auth] Token response: ${JSON.stringify(data)}`);
+    const { access_token } = data;
 
     if (!access_token) {
       throw new Error("Failed to obtain access token from GitHub");

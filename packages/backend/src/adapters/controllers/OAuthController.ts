@@ -20,7 +20,10 @@ export class OAuthController {
     code: string,
   ): Promise<{ redirectUrl: string, token?: string, user?: any } | null> {
     try {
+      console.log(`[OAuth Controller] Calling loginUseCase for ${providerName}...`);
       const authResult = await this.loginUseCase.execute(providerName, code);
+      console.log(`[OAuth Controller] loginUseCase success for ${authResult.user.email}`);
+
       // We return the token separately so the server can set an HttpOnly cookie
       const redirectUrl = new URL(`${this.frontendUrl}/auth/callback`);
       redirectUrl.searchParams.set("user", JSON.stringify(authResult.user));
@@ -29,7 +32,7 @@ export class OAuthController {
       const errorMessage = err instanceof Error ? err.message : "OAuthLoginFailed";
       console.warn(`[OAuth Warning] Handled failed login attempt for ${providerName}: ${errorMessage}`);
       
-      const errorUrl = new URL(`${this.frontendUrl}/login`);
+      const errorUrl = new URL(this.frontendUrl);
       errorUrl.searchParams.set("error", errorMessage);
       return { redirectUrl: errorUrl.toString() };
     }
