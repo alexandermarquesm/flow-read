@@ -540,8 +540,21 @@ export const ReaderProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    const syncAuth = (event: StorageEvent) => {
+      if (event.key === 'auth_pending_data') {
+        try {
+          const data = JSON.parse(event.newValue || '');
+          if (data?.token) {
+            console.log('[Auth] Syncing credentials from localStorage event');
+            login(data.user, data.token);
+            localStorage.removeItem('auth_pending_data');
+            showToast("Successfully logged in!", "success");
+          }
+        } catch (e) {}
+      }
+    };
+
     const handleAuthMessage = (event: MessageEvent) => {
-      // Security check: ensure the message comes from our own origin
       if (event.origin !== window.location.origin) return;
 
       if (event.data?.type === "AUTH_SUCCESS") {
@@ -557,7 +570,11 @@ export const ReaderProvider = ({ children }: { children: ReactNode }) => {
     };
 
     window.addEventListener("message", handleAuthMessage);
-    return () => window.removeEventListener("message", handleAuthMessage);
+    window.addEventListener("storage", syncAuth);
+    return () => {
+      window.removeEventListener("message", handleAuthMessage);
+      window.removeEventListener("storage", syncAuth);
+    };
   }, [login, showToast]);
 
   const value = React.useMemo(() => ({
@@ -603,7 +620,9 @@ export const ReaderProvider = ({ children }: { children: ReactNode }) => {
     books, activeBookId, user, token, login, logout, showToast
   ]);
 
-  if (loading && token && !user) {
+  const isAuthCallback = window.location.pathname.includes('/auth/callback');
+
+  if (loading && token && !user && !isAuthCallback) {
     return (
       <div style={{ 
         height: '100vh', 
