@@ -14,10 +14,7 @@ import { OAuthController } from "../../adapters/controllers/OAuthController";
 import type { OAuthProviderService } from "../../domain/services/OAuthProviderService";
 import type { OAuthProvider } from "@flow-read/shared";
 
-const PORT = config.port;
-const ENV = process.env.NODE_ENV || "development";
-
-log(`Starting backend server in ${ENV} mode on port ${PORT}`);
+log(`Starting backend server in ${config.env} mode on port ${config.port}`);
 
 const getWelcomeMessageUseCase = new GetWelcomeMessageUseCase();
 const ttsController = new TtsController();
@@ -25,61 +22,51 @@ const discoveryController = new DiscoveryController();
 const imageController = new ImageController();
 
 // --- Auth Setup ---
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-
-
 const userRepository = new PrismaUserRepository(prisma);
-const jwtService = new BunJwtService(JWT_SECRET, JWT_EXPIRES_IN);
+const jwtService = new BunJwtService(config.auth.jwtSecret, config.auth.jwtExpiresIn);
 
 const providerServices = new Map<OAuthProvider, OAuthProviderService>();
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+if (config.auth.google.clientId && config.auth.google.clientSecret) {
   providerServices.set(
     "google",
     new GoogleOAuthProvider(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_CALLBACK_URL || `http://localhost:${PORT}/api/auth/google/callback`,
+      config.auth.google.clientId,
+      config.auth.google.clientSecret,
+      config.auth.google.callbackUrl!,
     ),
   );
 }
 
-if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+if (config.auth.github.clientId && config.auth.github.clientSecret) {
   providerServices.set(
     "github",
     new GithubOAuthProvider(
-      process.env.GITHUB_CLIENT_ID,
-      process.env.GITHUB_CLIENT_SECRET,
-      process.env.GITHUB_CALLBACK_URL || `http://localhost:${PORT}/api/auth/github/callback`,
+      config.auth.github.clientId,
+      config.auth.github.clientSecret,
+      config.auth.github.callbackUrl!,
     ),
   );
 }
 
 const loginUseCase = new OAuthLoginUseCase(userRepository, providerServices, jwtService);
-const oauthController = new OAuthController(loginUseCase, providerServices, FRONTEND_URL);
+const oauthController = new OAuthController(loginUseCase, providerServices, config.frontend.mainUrl);
 // ------------------
 
 Bun.serve({
-  port: PORT,
+  port: config.port,
   idleTimeout: 120, // Aumentado para 2 minutos para permitir que a IA do Python processe livros grandes
   async fetch(req) {
     const url = new URL(req.url);
 
-    // CORS Headers: Restrict to current request or frontend, with credentials enabled
     // CORS Headers: Support multiple origins from FRONTEND_URL
-    const rawOrigins = process.env.FRONTEND_URL || "http://localhost:5173";
-    const allowedOrigins = rawOrigins.split(",").map(o => o.trim().replace(/\/$/, ""));
     const requestOrigin = req.headers.get("Origin")?.replace(/\/$/, "");
     
-    // In production, strictly match against allowed origins. In dev, be more lenient.
-    const isAllowed = !requestOrigin || allowedOrigins.includes(requestOrigin);
-    const corsOrigin = (isAllowed && requestOrigin) ? requestOrigin : allowedOrigins[0];
-
-    // If we're on localhost but requested something else, it might be a mismatch
-    // Let's ensure we return the actual origin if it's allowed, otherwise fallback to first allowed
-    const finalOrigin = isAllowed && requestOrigin ? req.headers.get("Origin")! : allowedOrigins[0];
+    // Check if origin is allowed
+    const isAllowed = !requestOrigin || config.frontend.urls.includes(requestOrigin);
+    
+    // Use actual origin if allowed, otherwise fallback to first allowed origin
+    const finalOrigin = isAllowed && requestOrigin ? req.headers.get("Origin")! : config.frontend.urls[0];
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": finalOrigin,
@@ -97,7 +84,7 @@ Bun.serve({
       return new Response(
         JSON.stringify({
           message: message.content,
-          env: ENV,
+          env: config.env,
           logPrefix: LOG_PREFIX,
         }),
         {
@@ -162,7 +149,7 @@ Bun.serve({
         };
         // Strong mitigation against XSS: Set the token in an HttpOnly, Secure cookie
         if (result.token) {
-          const isProd = process.env.NODE_ENV === "production";
+          const isProd = config.env === "production";
           headers["Set-Cookie"] = `auth_token=${result.token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax${isProd ? "; Secure" : ""}`;
         }
         return new Response(null, { status: 302, headers });
@@ -176,7 +163,6 @@ Bun.serve({
     // API Routes via Controller
     if (url.pathname === "/api/voices" && req.method === "GET") {
       const response = await ttsController.getVoices(req);
-      // Append CORS to the response from controller
       Object.entries(corsHeaders).forEach(([k, v]) => {
         response.headers.set(k, v);
       });
