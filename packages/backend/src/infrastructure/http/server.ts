@@ -104,12 +104,13 @@ Bun.serve({
 
       const authUrl = oauthController.getAuthUrl(provider, state);
       if (authUrl) {
+        const isProd = config.env === "production";
         return new Response(null, {
           status: 302,
           headers: {
             ...corsHeaders,
             Location: authUrl,
-            "Set-Cookie": `oauth_state=${state}; HttpOnly; Path=/; Max-Age=3600; SameSite=Lax`,
+            "Set-Cookie": `oauth_state=${state}; HttpOnly; Path=/; Max-Age=3600; SameSite=Lax${isProd ? "; Secure" : ""}`,
           },
         });
       } else {
@@ -133,8 +134,14 @@ Bun.serve({
 
       if (!urlState || urlState !== cookieState) {
         log(`[Auth Error] State mismatch: url=${urlState}, cookie=${cookieState}`);
-        return new Response(`Invalid state parameter. Potential CSRF attack. URL State: ${urlState}, Cookie State: ${cookieState}`, {
-          status: 400, headers: corsHeaders,
+        const errorUrl = new URL(config.frontend.mainUrl);
+        errorUrl.searchParams.set("error", "Invalid session state. Please try again.");
+        return new Response(null, {
+          status: 302,
+          headers: {
+            ...corsHeaders,
+            Location: errorUrl.toString(),
+          },
         });
       }
 
