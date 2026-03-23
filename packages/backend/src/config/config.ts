@@ -22,7 +22,21 @@ export const config = {
     urls: (process.env.FRONTEND_URL || "http://localhost:5173").split(",").map(url => url.trim().replace(/\/$/, "")),
     mainUrl: (process.env.FRONTEND_URL || "http://localhost:5173").split(",")[0].trim().replace(/\/$/, ""),
   },
-  // Auth (REMOVED)
+  db: {
+    url: process.env.TURSO_DB_URL || "libsql://flow-read-gangplanklol.aws-us-east-1.turso.io",
+    authToken: process.env.TURSO_DB_AUTH_TOKEN || "",
+  },
+  auth: {
+    jwtSecret: process.env.JWT_SECRET || "default_secret_change_me",
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    },
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID || "",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+    },
+  },
   googleCloud: {
     keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
   },

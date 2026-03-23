@@ -85,7 +85,14 @@ export const Home = () => {
     setDownloadingId(book.link);
     try {
       const response = await fetch(`${API_URL}/api/discovery/download?url=${encodeURIComponent(book.link)}`);
-      if (!response.ok) throw new Error("Failed to download book");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.code === "SERVICE_OFFLINE") {
+          showToast("O serviço de busca de livros está offline. Verifique se o BiblioCLI está rodando.", "error");
+          return;
+        }
+        throw new Error("Failed to download book");
+      }
       
       const data = await response.json();
       const content = data.formatted_content;
@@ -129,7 +136,7 @@ export const Home = () => {
       showToast("Livro adicionado com sucesso à sua Library!", "success");
     } catch (err: any) {
       console.error("Error downloading book:", err);
-      showToast("O livro demorou muito para ser formatado ou ocorreu um erro. Tente novamente.", "error");
+      showToast("Erro ao processar o livro. Tente novamente ou verifique se o servidor de busca está ativo.", "error");
     } finally {
       setDownloadingId(null);
     }

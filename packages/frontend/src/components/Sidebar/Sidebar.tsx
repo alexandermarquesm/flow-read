@@ -3,19 +3,21 @@ import {
   BookOpen,
   Home,
   Library,
-  Settings as SettingsIcon,
+  LogOut,
+  User as UserIcon,
 } from "lucide-react";
 import { Button } from "../Button/Button";
 import styles from "./Sidebar.module.css";
+import { useAuth } from "../../context/AuthContext";
 
 interface SidebarProps {
-  className?: string; // Allow external layout to affect positioning/visibility
-  style?: React.CSSProperties; // Allow inline styles (e.g. for dynamic visibility)
+  className?: string;
+  style?: React.CSSProperties;
+  onOpenLogin?: () => void;
 }
 
-export const Sidebar = ({ className, style }: SidebarProps) => {
-  // const navigate = useNavigate(); // Removed auth
-  // const { user, logout } = useReader(); // Removed auth
+export const Sidebar = ({ className, style, onOpenLogin }: SidebarProps) => {
+  const { user, logout } = useAuth();
 
   return (
     <aside className={`${styles.sidebar} ${className || ""}`} style={style}>
@@ -63,14 +65,45 @@ export const Sidebar = ({ className, style }: SidebarProps) => {
       </nav>
 
       <div className={styles.footer}>
-        <Button
-          variant="ghost"
-          fullWidth
-          icon={<SettingsIcon size={20} />}
-          onClick={() => {}} // Handle settings click if needed
-        >
-          Settings
-        </Button>
+        {user ? (
+          <div className={styles.userSection}>
+            <div className={styles.avatarWrapper}>
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className={styles.avatar}
+                />
+              ) : (
+                <div className={styles.avatarPlaceholder}>
+                  <UserIcon size={18} />
+                </div>
+              )}
+            </div>
+            <div className={styles.userMeta}>
+              <span className={styles.userName}>{user.name}</span>
+              <div className={styles.userActions}>
+                <button
+                  className={styles.actionBtn}
+                  onClick={logout}
+                  title="Logout"
+                >
+                  <LogOut size={14} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="primary"
+            fullWidth
+            icon={<UserIcon size={20} />}
+            onClick={onOpenLogin}
+          >
+            Login
+          </Button>
+        )}
       </div>
     </aside>
   );

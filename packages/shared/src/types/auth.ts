@@ -1,4 +1,4 @@
-export type OAuthProvider = "google" | "github";
+export type OAuthProvider = "google" | "github" | "local";
 
 export interface OAuthUser {
   id: string; // Our internal DB ID
@@ -6,7 +6,7 @@ export interface OAuthUser {
   name: string;
   avatarUrl?: string;
   provider: OAuthProvider;
-  providerId: string; // The ID from Google/GitHub
+  providerId?: string; // The ID from Google/GitHub
   createdAt: string;
   updatedAt: string;
 }

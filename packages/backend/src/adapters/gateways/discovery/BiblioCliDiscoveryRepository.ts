@@ -7,18 +7,28 @@ import type {
 
 export class BiblioCliDiscoveryRepository implements IDiscoveryRepository {
   private baseUrl = config.discovery.baseUrl;
+  private warnedOffline = false;
 
   private async safeFetch(url: string, options?: RequestInit): Promise<Response> {
-    log(`[Discovery] Calling: ${url}`);
     try {
       const response = await fetch(url, options);
+      this.warnedOffline = false; // Reset warning if it succeeds
       return response;
     } catch (error: any) {
-      log(`[Discovery] Fetch error at ${url}: ${error.message}`);
-      if (error.code === "ConnectionRefused" || error.errno === -111) {
-        log(`[Discovery] Service unavailable at ${this.baseUrl}. Check if BiblioCLI is running.`);
+      const isConnectionError = 
+        error.code === "ECONNREFUSED" || 
+        error.code === "ConnectionRefused" || 
+        error.errno === -111;
+
+      if (isConnectionError) {
+        if (!this.warnedOffline) {
+          log(`[Discovery] Service offline at ${this.baseUrl}. Further connection errors will be silenced.`);
+          this.warnedOffline = true;
+        }
         throw new Error("DISCOVERY_SERVICE_UNAVAILABLE");
       }
+      
+      log(`[Discovery] Fetch error at ${url}: ${error.message}`);
       throw error;
     }
   }

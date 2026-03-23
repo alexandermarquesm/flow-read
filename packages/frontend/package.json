@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@flow-read/shared": "workspace:*",
+    "@react-oauth/google": "^0.12.1",
     "framer-motion": "^12.34.0",
     "lucide-react": "^0.570.0",
     "react": "^19.2.0",
