@@ -7,6 +7,7 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { Button } from "../Button/Button";
+import { getImageUrl } from "../CoverImage/CoverImage";
 import styles from "./Sidebar.module.css";
 import { useAuth } from "../../context/AuthContext";
 
@@ -70,7 +71,7 @@ export const Sidebar = ({ className, style, onOpenLogin }: SidebarProps) => {
             <div className={styles.avatarWrapper}>
               {user.avatarUrl ? (
                 <img
-                  src={user.avatarUrl}
+                  src={getImageUrl(user.avatarUrl)}
                   alt={user.name}
                   className={styles.avatar}
                 />

@@ -16,8 +16,7 @@
       "@flow-read/shared": ["../shared/src/index.ts"]
     },
     "types": [
-      "bun-types",
-      "node"
+      "bun-types"
     ],
     "outDir": "dist"
   },

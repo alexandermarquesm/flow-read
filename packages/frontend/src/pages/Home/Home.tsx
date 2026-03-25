@@ -5,7 +5,10 @@ import { Play, Loader2 } from "lucide-react";
 import { WaveDecoration } from "../../components/WaveDecoration/WaveDecoration";
 import { Button } from "../../components/Button/Button";
 import { useReader } from "../../context/ReaderContext";
-import { CoverImage, getImageUrl } from "../../components/CoverImage/CoverImage";
+import {
+  CoverImage,
+  getImageUrl,
+} from "../../components/CoverImage/CoverImage";
 import styles from "./Home.module.css";
 
 export interface DiscoveryBook {
@@ -47,12 +50,12 @@ export const Home = () => {
 
     const fetchPopular = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/discovery/popular`);
+        const response = await fetch(`${API_URL}/api/v1/books/popular`);
         if (response.ok && mounted) {
           const data = await response.json();
           const mapped = data.slice(0, 6).map((b: any, i: number) => ({
             ...b,
-            color: FALLBACK_COLORS[i % FALLBACK_COLORS.length]
+            color: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
           }));
           setPopularBooks(mapped);
           localStorage.setItem("popular-books-cache", JSON.stringify(mapped));
@@ -65,16 +68,19 @@ export const Home = () => {
     };
 
     fetchPopular();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleBookClick = async (book: DiscoveryBook) => {
     if (downloadingId) return;
-    
+
     // 1. Check if we already have it in the library (by Title/Author)
-    const existing = books.find(b => 
-      b.title.toLowerCase().includes(book.title.toLowerCase()) && 
-      b.author?.toLowerCase().includes(book.author?.toLowerCase() || "")
+    const existing = books.find(
+      (b) =>
+        b.title.toLowerCase().includes(book.title.toLowerCase()) &&
+        b.author?.toLowerCase().includes(book.author?.toLowerCase() || ""),
     );
 
     if (existing) {
@@ -84,19 +90,24 @@ export const Home = () => {
 
     setDownloadingId(book.link);
     try {
-      const response = await fetch(`${API_URL}/api/discovery/download?url=${encodeURIComponent(book.link)}`);
+      const response = await fetch(
+        `${API_URL}/api/discovery/download?url=${encodeURIComponent(book.link)}`,
+      );
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         if (errorData.code === "SERVICE_OFFLINE") {
-          showToast("O serviço de busca de livros está offline. Verifique se o BiblioCLI está rodando.", "error");
+          showToast(
+            "O serviço de busca de livros está offline. Verifique se o BiblioCLI está rodando.",
+            "error",
+          );
           return;
         }
         throw new Error("Failed to download book");
       }
-      
+
       const data = await response.json();
       const content = data.formatted_content;
-      
+
       // Pula metadados iniciais (TOC, Prefácios, etc) usando o índice sugerido
       const startIndex = content.suggested_start?.chapter_index ?? 0;
 
@@ -107,7 +118,7 @@ export const Home = () => {
         startChar: number;
         index: number;
       }[] = [];
-      
+
       const narrativeChapters = content.chapters
         .slice(startIndex)
         .filter((ch: any) => ch.is_narrative);
@@ -126,17 +137,26 @@ export const Home = () => {
         .join("\n\n");
 
       // Aumenta a performance e aplica o padrão do Nexus
-      addBook(content.title, content.author, fullText, data.cover_url || book.cover_url, {
-        genre: "Discovery",
-        publicationDate: data.year || book.year || "",
-        chapters: chaptersMetadata
-      });
+      addBook(
+        content.title,
+        content.author,
+        fullText,
+        data.cover_url || book.cover_url,
+        {
+          genre: "Discovery",
+          publicationDate: data.year || book.year || "",
+          chapters: chaptersMetadata,
+        },
+      );
 
       // Mostra a notificação amigável mantendo o usuário na Home
       showToast("Livro adicionado com sucesso à sua Library!", "success");
     } catch (err: any) {
       console.error("Error downloading book:", err);
-      showToast("Erro ao processar o livro. Tente novamente ou verifique se o servidor de busca está ativo.", "error");
+      showToast(
+        "Erro ao processar o livro. Tente novamente ou verifique se o servidor de busca está ativo.",
+        "error",
+      );
     } finally {
       setDownloadingId(null);
     }
@@ -154,10 +174,15 @@ export const Home = () => {
           <div className={styles.heroContent}>
             <div className={styles.heroHeader}>
               <h1 className={styles.heroTitle}>
-                {heroBook?.title || (loading ? "Carregando..." : "Descubra novos clássicos")}
+                {heroBook?.title ||
+                  (loading ? "Carregando..." : "Descubra novos clássicos")}
               </h1>
               <p className={styles.heroAuthor}>
-                {heroBook ? `${heroBook.author}` : (loading ? "" : "Explore a biblioteca")}
+                {heroBook
+                  ? `${heroBook.author}`
+                  : loading
+                    ? ""
+                    : "Explore a biblioteca"}
               </p>
             </div>
             <WaveDecoration className={styles.waveDecoration} />
@@ -165,13 +190,17 @@ export const Home = () => {
             <div className={styles.heroContent}>
               <Button
                 variant="primary"
-                onClick={() => heroBook ? handleBookClick(heroBook) : navigate("/reading")}
+                onClick={() =>
+                  heroBook ? handleBookClick(heroBook) : navigate("/reading")
+                }
                 disabled={!!downloadingId}
-                icon={downloadingId === heroBook?.link ? (
-                  <Loader2 size={20} className={styles.spin} />
-                ) : (
-                  <Play size={20} fill="currentColor" />
-                )}
+                icon={
+                  downloadingId === heroBook?.link ? (
+                    <Loader2 size={20} className={styles.spin} />
+                  ) : (
+                    <Play size={20} fill="currentColor" />
+                  )
+                }
               >
                 {downloadingId === heroBook?.link ? "Loading..." : "Read Now"}
               </Button>
@@ -185,7 +214,9 @@ export const Home = () => {
               alt={heroBook?.title || "Hero Book"}
             />
             <p className={styles.heroSubtitle}>
-              {heroBook ? "Discover great classics from Project Gutenberg." : ""}
+              {heroBook
+                ? "Discover great classics from Project Gutenberg."
+                : ""}
             </p>
           </div>
         </div>
@@ -198,9 +229,9 @@ export const Home = () => {
           >
             <div className={styles.cardImageContainer}>
               {currentBook?.coverUrl ? (
-                <CoverImage 
+                <CoverImage
                   src={getImageUrl(currentBook.coverUrl)}
-                  alt={`Capa do livro: ${currentBook.title}`} 
+                  alt={`Capa do livro: ${currentBook.title}`}
                   className={styles.bookCoverImage}
                 />
               ) : (
@@ -267,8 +298,8 @@ export const Home = () => {
               </div>
             ) : (
               popularBooks.map((book) => (
-                <div 
-                  key={book.link} 
+                <div
+                  key={book.link}
                   className={`${styles.arrivalCard} ${downloadingId === book.link ? styles.downloading : ""}`}
                   onClick={() => handleBookClick(book)}
                 >
@@ -281,7 +312,11 @@ export const Home = () => {
                         src={getImageUrl(book.cover_url)}
                         alt={book.title}
                         loading="lazy"
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
                       />
                     )}
                     {downloadingId === book.link && (
