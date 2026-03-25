@@ -50,7 +50,7 @@ export const Home = () => {
 
     const fetchPopular = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/v1/books/popular`);
+        const response = await fetch(`${API_URL}/api/discovery/popular`);
         if (response.ok && mounted) {
           const data = await response.json();
           const mapped = data.slice(0, 6).map((b: any, i: number) => ({

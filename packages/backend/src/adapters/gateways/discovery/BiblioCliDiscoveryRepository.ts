@@ -6,7 +6,7 @@ import type {
 } from "../../../domain/interfaces/IDiscoveryRepository";
 
 export class BiblioCliDiscoveryRepository implements IDiscoveryRepository {
-  private baseUrl = config.discovery.baseUrl;
+  private baseUrl = config.discovery.baseUrl.replace(/\/$/, "");
   private warnedOffline = false;
 
   private async safeFetch(url: string, options?: RequestInit): Promise<Response> {
