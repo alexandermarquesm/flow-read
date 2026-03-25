@@ -48,7 +48,7 @@ export const Home = () => {
       }
     }
 
-    const fetchPopular = async () => {
+    const fetchPopularWithRetry = async (attempt = 1) => {
       try {
         const response = await fetch(`${API_URL}/api/discovery/popular`);
         if (response.ok && mounted) {
@@ -59,15 +59,22 @@ export const Home = () => {
           }));
           setPopularBooks(mapped);
           localStorage.setItem("popular-books-cache", JSON.stringify(mapped));
+          setLoading(false);
+          return;
         }
+        throw new Error(`Status: ${response.status}`);
       } catch (err) {
-        console.error("Failed to fetch popular books", err);
-      } finally {
-        if (mounted) setLoading(false);
+        if (mounted && attempt < 5) {
+          console.warn(`Attempt ${attempt} to fetch popular books failed. Retrying in 2s...`, err);
+          setTimeout(() => fetchPopularWithRetry(attempt + 1), 2000);
+        } else if (mounted) {
+          console.error("Failed to fetch popular books after 5 attempts", err);
+          setLoading(false);
+        }
       }
     };
 
-    fetchPopular();
+    fetchPopularWithRetry();
     return () => {
       mounted = false;
     };
