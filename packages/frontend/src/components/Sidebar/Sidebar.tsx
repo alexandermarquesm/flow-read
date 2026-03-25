@@ -25,7 +25,7 @@ export const Sidebar = ({ className, style, onOpenLogin }: SidebarProps) => {
       <div className={styles.brand}>
         <h1 className={styles.brandTitle}>
           <img
-            src="/logo.webp"
+            src="/logo.png"
             alt="Flow Reader Logo"
             className={styles.brandLogo}
           />
