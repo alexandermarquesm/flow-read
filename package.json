@@ -15,7 +15,7 @@
     "test:frontend": "pnpm --filter frontend test",
     "test:shared": "pnpm --filter shared test",
     "dev": "pnpm -r --parallel run dev",
-    "prod": "pnpm -r --parallel --filter backend --filter frontend run start",
+    "prod": "NODE_ENV=production pnpm -r --parallel --filter backend --filter frontend run start",
     "build": "pnpm -r build",
     "build:backend": "pnpm --filter @flow-read/backend build",
     "build:frontend": "pnpm --filter @flow-read/frontend build",
