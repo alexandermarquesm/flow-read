@@ -48,25 +48,35 @@ export const Home = () => {
       }
     }
 
-    const fetchPopularWithRetry = async () => {
+    const fetchPopularWithRetry = async (retryCount = 0) => {
       try {
         const response = await fetch(`${API_URL}/api/discovery/popular`);
-        if (mounted && response.ok) {
-          const data = await response.json();
-          const mapped = data.slice(0, 6).map((b: any, i: number) => ({
-            ...b,
-            color: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
-          }));
-          setPopularBooks(mapped);
-          localStorage.setItem("popular-books-cache", JSON.stringify(mapped));
-          setLoading(false);
-        } else if (mounted) {
-          setLoading(false);
+        if (mounted) {
+          if (response.ok) {
+            const data = await response.json();
+            const mapped = data.slice(0, 6).map((b: any, i: number) => ({
+              ...b,
+              color: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
+            }));
+            setPopularBooks(mapped);
+            localStorage.setItem("popular-books-cache", JSON.stringify(mapped));
+            setLoading(false);
+          } else if (retryCount < 2) {
+            // Se falhou (pode ser cold start do backend no Render), tenta mais 2 vezes com delay menor
+            console.warn(`Fetch failed (status ${response.status}). Retrying (${retryCount + 1}/2)...`);
+            setTimeout(() => fetchPopularWithRetry(retryCount + 1), 3000);
+          } else {
+            setLoading(false);
+          }
         }
       } catch (err) {
         if (mounted) {
-          console.error("Fetch failed", err);
-          setLoading(false);
+          if (retryCount < 2) {
+            setTimeout(() => fetchPopularWithRetry(retryCount + 1), 3000);
+          } else {
+            console.error("Fetch failed after retries", err);
+            setLoading(false);
+          }
         }
       }
     };
