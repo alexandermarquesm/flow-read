@@ -21,8 +21,8 @@ export class DiscoveryController {
     log("[DiscoveryController] popular() hit");
     try {
       const now = Date.now();
-
-      // Return from cache if valid
+      
+      /* Cache desativado para teste
       if (POPULAR_CACHE.data && now - POPULAR_CACHE.lastFetch < POPULAR_TTL_MS) {
         return new Response(JSON.stringify(POPULAR_CACHE.data), {
           headers: { 
@@ -31,6 +31,7 @@ export class DiscoveryController {
           },
         });
       }
+      */
 
       const results = await popularUseCase.execute();
       
