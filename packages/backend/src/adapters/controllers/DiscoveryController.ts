@@ -157,13 +157,28 @@ export class DiscoveryController {
 
     try {
       // 1. Tentar primeiro o serviço externo (BiblioCLI local ou Vercel)
-      // Isso permite testar a integração real na porta 8000
       const data = await downloadUseCase.execute(bookUrl);
+      
+      // 2. Validação de Autocura: Se o serviço remoto retornar algo "quebrado" (ex: erro no JSON mas status 200)
+      // Verificamos se tem capítulos. Se não tiver e for um clássico, usamos o local.
+      const isBroken = !data || (typeof data === "object" && !data.chapters);
+      
+      if (isBroken && LOCAL_BOOKS_MAP[bookUrl]) {
+        const localPath = path.join(process.cwd(), "ebooks", LOCAL_BOOKS_MAP[bookUrl]);
+        if (fs.existsSync(localPath)) {
+          const content = fs.readFileSync(localPath, "utf-8");
+          console.log(`🛡️ [SELF-HEALING] Remote service returned invalid data for classic, using local fallback: ${LOCAL_BOOKS_MAP[bookUrl]}`);
+          return new Response(content, {
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      }
+
       return new Response(JSON.stringify(data), {
         headers: { "Content-Type": "application/json" },
       });
     } catch (error: any) {
-      // 2. Se falhar (offline), tenta o cache local para os 6 clássicos
+      // 3. Fallback tradicional se o serviço estiver offline (Connection Refused, etc.)
       if (LOCAL_BOOKS_MAP[bookUrl]) {
         const localPath = path.join(process.cwd(), "ebooks", LOCAL_BOOKS_MAP[bookUrl]);
         if (fs.existsSync(localPath)) {
@@ -175,7 +190,6 @@ export class DiscoveryController {
         }
       }
       
-      // Se não for um clássico ou o arquivo local não existir, propaga o erro
       return this.handleError("download", error);
     }
   }
