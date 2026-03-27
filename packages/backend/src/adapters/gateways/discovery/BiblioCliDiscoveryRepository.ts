@@ -9,18 +9,10 @@ export class BiblioCliDiscoveryRepository implements IDiscoveryRepository {
   private baseUrl = config.discovery.baseUrl.replace(/\/$/, "");
   private warnedOffline = false;
 
-  private async safeFetch(url: string, options?: RequestInit, retry = true): Promise<Response> {
+  private async safeFetch(url: string, options?: RequestInit): Promise<Response> {
     try {
       const response = await fetch(url, options);
-      
-      // If service is sleeping (Render cold start)
-      if (!response.ok && [502, 503, 504].includes(response.status) && retry) {
-        log(`[Discovery] Service unavailable (Status ${response.status}) at ${url}. Waiting 15s to retry...`);
-        await new Promise(resolve => setTimeout(resolve, 15000));
-        return this.safeFetch(url, options, false); // Retry once without another retry
-      }
-
-      this.warnedOffline = false; // Reset warning if it succeeds
+      this.warnedOffline = false;
       return response;
     } catch (error: any) {
       const isConnectionError = 
@@ -29,12 +21,6 @@ export class BiblioCliDiscoveryRepository implements IDiscoveryRepository {
         error.errno === -111;
 
       if (isConnectionError) {
-        if (retry) {
-          log(`[Discovery] Connection refused at ${this.baseUrl}. Waiting 15s to retry...`);
-          await new Promise(resolve => setTimeout(resolve, 15000));
-          return this.safeFetch(url, options, false);
-        }
-
         if (!this.warnedOffline) {
           log(`[Discovery] Service offline at ${this.baseUrl}. Further connection errors will be silenced.`);
           this.warnedOffline = true;

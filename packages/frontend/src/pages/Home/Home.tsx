@@ -51,44 +51,21 @@ export const Home = () => {
     const fetchPopularWithRetry = async () => {
       try {
         const response = await fetch(`${API_URL}/api/discovery/popular`);
-        if (mounted) {
-          if (response.ok) {
-            const data = await response.json();
-            const mapped = data.slice(0, 6).map((b: any, i: number) => ({
-              ...b,
-              color: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
-            }));
-            setPopularBooks(mapped);
-            localStorage.setItem("popular-books-cache", JSON.stringify(mapped));
-            setLoading(false);
-          } else {
-            // First attempt failed (likely 503), wait 15s and try only one more time
-            console.warn(`Initial fetch failed (${response.status}). Retrying once in 15s...`);
-            setTimeout(async () => {
-              if (!mounted) return;
-              try {
-                const retryResponse = await fetch(`${API_URL}/api/discovery/popular`);
-                if (retryResponse.ok && mounted) {
-                  const data = await retryResponse.json();
-                  const mapped = data.slice(0, 6).map((b: any, i: number) => ({
-                    ...b,
-                    color: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
-                  }));
-                  setPopularBooks(mapped);
-                  localStorage.setItem("popular-books-cache", JSON.stringify(mapped));
-                }
-              } catch (err) {
-                console.error("Final retry failed", err);
-              } finally {
-                if (mounted) setLoading(false);
-              }
-            }, 15000);
-          }
+        if (mounted && response.ok) {
+          const data = await response.json();
+          const mapped = data.slice(0, 6).map((b: any, i: number) => ({
+            ...b,
+            color: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
+          }));
+          setPopularBooks(mapped);
+          localStorage.setItem("popular-books-cache", JSON.stringify(mapped));
+          setLoading(false);
+        } else if (mounted) {
+          setLoading(false);
         }
       } catch (err) {
         if (mounted) {
           console.error("Fetch failed", err);
-          // Optional: we could still try the 15s retry here if it was a network error
           setLoading(false);
         }
       }
