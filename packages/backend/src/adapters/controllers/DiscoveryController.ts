@@ -91,6 +91,11 @@ export class DiscoveryController {
       try {
         if (!fs.existsSync(fullPath)) return null;
         const content = JSON.parse(fs.readFileSync(fullPath, "utf-8"));
+        
+        // Extrair ID do Project Gutenberg da URL (ex: .../ebooks/84 -> 84)
+        const pgId = url.split("/").pop();
+        const cover_url = pgId ? `https://www.gutenberg.org/cache/epub/${pgId}/pg${pgId}.cover.medium.jpg` : null;
+
         return {
           source: "(Local Cache)",
           title: content.title,
@@ -98,7 +103,7 @@ export class DiscoveryController {
           language: "English",
           link: url,
           year: "Classic",
-          cover_url: null,
+          cover_url: cover_url,
         };
       } catch (e) {
         return null;
