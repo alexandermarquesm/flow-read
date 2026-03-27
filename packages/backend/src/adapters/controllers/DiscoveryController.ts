@@ -28,6 +28,15 @@ const LOCAL_BOOKS_MAP: Record<string, string> = {
 
 export class DiscoveryController {
   async popular(req: Request): Promise<Response> {
+    // 1. Em DEV, sempre usar os 6 clássicos locais (rápido e offline)
+    if (process.env.NODE_ENV !== "production") {
+      const localResults = await this.getLocalPopularBooks();
+      return new Response(JSON.stringify(localResults), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // 2. Em PROD, tentar cache em memória ou serviço externo
     try {
       const now = Date.now();
       
@@ -47,6 +56,11 @@ export class DiscoveryController {
       if (Array.isArray(results) && results.length > 0) {
         POPULAR_CACHE.data = results;
         POPULAR_CACHE.lastFetch = now;
+      } else if (!POPULAR_CACHE.data) {
+        // Fallback para locais se o serviço falhar (cold start/offline) em PROD
+        return new Response(JSON.stringify(await this.getLocalPopularBooks()), {
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       return new Response(JSON.stringify(results), {
@@ -63,8 +77,33 @@ export class DiscoveryController {
           headers: { "Content-Type": "application/json" },
         });
       }
-      return this.handleError("popular", error);
+      
+      // Fallback final para livros locais
+      return new Response(JSON.stringify(await this.getLocalPopularBooks()), {
+        headers: { "Content-Type": "application/json" },
+      });
     }
+  }
+
+  private async getLocalPopularBooks() {
+    return Object.entries(LOCAL_BOOKS_MAP).map(([url, filePath]) => {
+      const fullPath = path.join(process.cwd(), "ebooks", filePath);
+      try {
+        if (!fs.existsSync(fullPath)) return null;
+        const content = JSON.parse(fs.readFileSync(fullPath, "utf-8"));
+        return {
+          source: "(Local Cache)",
+          title: content.title,
+          author: content.author,
+          language: "English",
+          link: url,
+          year: "Classic",
+          cover_url: null,
+        };
+      } catch (e) {
+        return null;
+      }
+    }).filter((b): b is any => b !== null);
   }
 
   private handleError(operation: string, error: any): Response {
