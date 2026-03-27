@@ -159,16 +159,25 @@ export class DiscoveryController {
       // 1. Tentar primeiro o serviço externo (BiblioCLI local ou Vercel)
       const data = await downloadUseCase.execute(bookUrl);
       
-      // 2. Validação de Autocura: Se o serviço remoto retornar algo "quebrado" (ex: erro no JSON mas status 200)
-      // Verificamos se tem capítulos. Se não tiver e for um clássico, usamos o local.
-      const isBroken = !data || (typeof data === "object" && !data.chapters);
+      // 2. Validação de Autocura
+      const isBroken = !data || (typeof data === "object" && !data.chapters && !data.formatted_content);
       
       if (isBroken && LOCAL_BOOKS_MAP[bookUrl]) {
         const localPath = path.join(process.cwd(), "ebooks", LOCAL_BOOKS_MAP[bookUrl]);
         if (fs.existsSync(localPath)) {
-          const content = fs.readFileSync(localPath, "utf-8");
-          console.log(`🛡️ [SELF-HEALING] Remote service returned invalid data for classic, using local fallback: ${LOCAL_BOOKS_MAP[bookUrl]}`);
-          return new Response(content, {
+          console.log(`🛡️ [SELF-HEALING] Remote service returned invalid data, using local fallback.`);
+          const bookData = JSON.parse(fs.readFileSync(localPath, "utf-8"));
+          
+          // Extrair ID para a capa
+          const pgId = bookUrl.split("/").pop();
+          const cover_url = pgId ? `https://www.gutenberg.org/cache/epub/${pgId}/pg${pgId}.cover.medium.jpg` : null;
+
+          return new Response(JSON.stringify({
+            book_url: bookUrl,
+            cover_url: cover_url,
+            year: "Classic",
+            formatted_content: bookData
+          }), {
             headers: { "Content-Type": "application/json" },
           });
         }
@@ -178,13 +187,22 @@ export class DiscoveryController {
         headers: { "Content-Type": "application/json" },
       });
     } catch (error: any) {
-      // 3. Fallback tradicional se o serviço estiver offline (Connection Refused, etc.)
+      // 3. Fallback tradicional se o serviço estiver offline
       if (LOCAL_BOOKS_MAP[bookUrl]) {
         const localPath = path.join(process.cwd(), "ebooks", LOCAL_BOOKS_MAP[bookUrl]);
         if (fs.existsSync(localPath)) {
-          const content = fs.readFileSync(localPath, "utf-8");
-          console.log(`📦 [LOCAL CACHE] Serving book from disk due to service error: ${LOCAL_BOOKS_MAP[bookUrl]}`);
-          return new Response(content, {
+          const bookData = JSON.parse(fs.readFileSync(localPath, "utf-8"));
+          console.log(`📦 [LOCAL CACHE] Serving wrapped book from disk: ${LOCAL_BOOKS_MAP[bookUrl]}`);
+          
+          const pgId = bookUrl.split("/").pop();
+          const cover_url = pgId ? `https://www.gutenberg.org/cache/epub/${pgId}/pg${pgId}.cover.medium.jpg` : null;
+
+          return new Response(JSON.stringify({
+            book_url: bookUrl,
+            cover_url: cover_url,
+            year: "Classic",
+            formatted_content: bookData
+          }), {
             headers: { "Content-Type": "application/json" },
           });
         }
