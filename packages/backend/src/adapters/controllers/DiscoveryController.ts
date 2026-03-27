@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { SearchDiscoveryBooks } from "../../use_cases/SearchDiscoveryBooks";
 import { DownloadAndFormatBook } from "../../use_cases/DownloadAndFormatBook";
 import { GetPopularBooks } from "../../use_cases/GetPopularBooks";
@@ -13,7 +15,16 @@ const POPULAR_CACHE: { data: any; lastFetch: number } = {
   data: null,
   lastFetch: 0,
 };
-const POPULAR_TTL_MS = 1000 * 60 * 30; // 30 minutes
+const POPULAR_TTL_MS = 30 * 60 * 1000;
+
+const LOCAL_BOOKS_MAP: Record<string, string> = {
+  "https://www.gutenberg.org/ebooks/84": "Shelley Mary Wollstonecraft/Frankenstein or the modern prometheus.json",
+  "https://www.gutenberg.org/ebooks/45304": "Augustine of Hippo Saint/The City of God Volume I.json",
+  "https://www.gutenberg.org/ebooks/768": "Brontë Emily/Wuthering Heights.json",
+  "https://www.gutenberg.org/ebooks/2701": "Melville Herman/Moby Dick Or The Whale.json",
+  "https://www.gutenberg.org/ebooks/1342": "Austen Jane/Pride and Prejudice.json",
+  "https://www.gutenberg.org/ebooks/1513": "Shakespeare William/Romeo and Juliet.json",
+};
 
 export class DiscoveryController {
   async popular(req: Request): Promise<Response> {
@@ -120,6 +131,19 @@ export class DiscoveryController {
     }
 
     try {
+      // 1. Check local cache (6 classics)
+      if (LOCAL_BOOKS_MAP[bookUrl]) {
+        const localPath = path.join(process.cwd(), "ebooks", LOCAL_BOOKS_MAP[bookUrl]);
+        if (fs.existsSync(localPath)) {
+          const content = fs.readFileSync(localPath, "utf-8");
+          console.log(`📦 [LOCAL CACHE] Serving book from disk: ${LOCAL_BOOKS_MAP[bookUrl]}`);
+          return new Response(content, {
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      }
+
+      // 2. Fallback to external discovery service (now using Turso)
       const data = await downloadUseCase.execute(bookUrl);
       return new Response(JSON.stringify(data), {
         headers: { "Content-Type": "application/json" },
