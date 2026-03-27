@@ -58,13 +58,18 @@ export const Home = () => {
           if (response.ok) {
             console.log(`[FlowRead] Fetch success from ${fullUrl}`);
             const data = await response.json();
+            console.log(`[FlowRead] Data received:`, data);
+            
             const mapped = data.slice(0, 6).map((b: any, i: number) => ({
               ...b,
               color: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
             }));
+            
+            console.log(`[FlowRead] Mapped books:`, mapped);
             setPopularBooks(mapped);
             localStorage.setItem("popular-books-cache", JSON.stringify(mapped));
             setLoading(false);
+            console.log(`[FlowRead] Loading set to false, books length: ${mapped.length}`);
           } else if (retryCount < 8) {
             console.warn(`[FlowRead] Backend returned ${response.status}. Retrying (${retryCount + 1}/8)...`);
             setTimeout(() => fetchPopularWithRetry(retryCount + 1), 5000);
