@@ -28,58 +28,40 @@ const LOCAL_BOOKS_MAP: Record<string, string> = {
 
 export class DiscoveryController {
   async popular(req: Request): Promise<Response> {
-    // 1. Em DEV, sempre usar os 6 clássicos locais (rápido e offline)
-    if (process.env.NODE_ENV !== "production") {
-      const localResults = await this.getLocalPopularBooks();
-      return new Response(JSON.stringify(localResults), {
-        headers: { "Content-Type": "application/json" },
+    const now = Date.now();
+    
+    // 1. Tentar cache em memória primeiro (se for produção ou se o cache for muito recente)
+    if (POPULAR_CACHE.data && now - POPULAR_CACHE.lastFetch < POPULAR_TTL_MS) {
+      return new Response(JSON.stringify(POPULAR_CACHE.data), {
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": `public, max-age=${POPULAR_TTL_MS / 1000}`
+        },
       });
     }
 
-    // 2. Em PROD, tentar cache em memória ou serviço externo
     try {
-      const now = Date.now();
+      // 2. Tentar o serviço de descoberta (seja Local 8000 ou Vercel Prod)
+      const results = await popularUseCase.execute();
       
-      // Return from cache if valid
-      if (POPULAR_CACHE.data && now - POPULAR_CACHE.lastFetch < POPULAR_TTL_MS) {
-        return new Response(JSON.stringify(POPULAR_CACHE.data), {
+      if (Array.isArray(results) && results.length > 0) {
+        POPULAR_CACHE.data = results;
+        POPULAR_CACHE.lastFetch = now;
+        return new Response(JSON.stringify(results), {
           headers: { 
             "Content-Type": "application/json",
             "Cache-Control": `public, max-age=${POPULAR_TTL_MS / 1000}`
           },
         });
       }
-
-      const results = await popularUseCase.execute();
       
-      // Update cache only if we have data to avoid caching failures/empty lists
-      if (Array.isArray(results) && results.length > 0) {
-        POPULAR_CACHE.data = results;
-        POPULAR_CACHE.lastFetch = now;
-      } else if (!POPULAR_CACHE.data) {
-        // Fallback para locais se o serviço falhar (cold start/offline) em PROD
-        return new Response(JSON.stringify(await this.getLocalPopularBooks()), {
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      return new Response(JSON.stringify(results), {
-        headers: { 
-          "Content-Type": "application/json",
-          "Cache-Control": `public, max-age=${POPULAR_TTL_MS / 1000}`
-        },
-      });
+      // Se retornar vazio, cai no fallback local
+      throw new Error("EMPTY_RESULTS");
     } catch (error: any) {
-      // Fallback to cache if error and we have stale data
-      if (POPULAR_CACHE.data) {
-        console.warn("Returning stale cache due to error in popularUseCase");
-        return new Response(JSON.stringify(POPULAR_CACHE.data), {
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      
-      // Fallback final para livros locais
-      return new Response(JSON.stringify(await this.getLocalPopularBooks()), {
+      // 3. Fallback inteligente: Se o serviço estiver offline ou der erro, usa os locais
+      console.warn(`⚠️ [Discovery] Popular books service error, using local fallback. Error: ${error.message}`);
+      const localResults = await this.getLocalPopularBooks();
+      return new Response(JSON.stringify(localResults), {
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -92,7 +74,6 @@ export class DiscoveryController {
         if (!fs.existsSync(fullPath)) return null;
         const content = JSON.parse(fs.readFileSync(fullPath, "utf-8"));
         
-        // Extrair ID do Project Gutenberg da URL (ex: .../ebooks/84 -> 84)
         const pgId = url.split("/").pop();
         const cover_url = pgId ? `https://www.gutenberg.org/cache/epub/${pgId}/pg${pgId}.cover.medium.jpg` : null;
 
@@ -175,24 +156,26 @@ export class DiscoveryController {
     }
 
     try {
-      // 1. Check local cache (6 classics)
-      if (LOCAL_BOOKS_MAP[bookUrl]) {
-        const localPath = path.join(process.cwd(), "ebooks", LOCAL_BOOKS_MAP[bookUrl]);
-        if (fs.existsSync(localPath)) {
-          const content = fs.readFileSync(localPath, "utf-8");
-          console.log(`📦 [LOCAL CACHE] Serving book from disk: ${LOCAL_BOOKS_MAP[bookUrl]}`);
-          return new Response(content, {
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-      }
-
-      // 2. Fallback to external discovery service (now using Turso)
+      // 1. Tentar primeiro o serviço externo (BiblioCLI local ou Vercel)
+      // Isso permite testar a integração real na porta 8000
       const data = await downloadUseCase.execute(bookUrl);
       return new Response(JSON.stringify(data), {
         headers: { "Content-Type": "application/json" },
       });
     } catch (error: any) {
+      // 2. Se falhar (offline), tenta o cache local para os 6 clássicos
+      if (LOCAL_BOOKS_MAP[bookUrl]) {
+        const localPath = path.join(process.cwd(), "ebooks", LOCAL_BOOKS_MAP[bookUrl]);
+        if (fs.existsSync(localPath)) {
+          const content = fs.readFileSync(localPath, "utf-8");
+          console.log(`📦 [LOCAL CACHE] Serving book from disk due to service error: ${LOCAL_BOOKS_MAP[bookUrl]}`);
+          return new Response(content, {
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      }
+      
+      // Se não for um clássico ou o arquivo local não existir, propaga o erro
       return this.handleError("download", error);
     }
   }
