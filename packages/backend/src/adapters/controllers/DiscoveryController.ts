@@ -1,4 +1,3 @@
-import { log } from "@flow-read/shared";
 import { SearchDiscoveryBooks } from "../../use_cases/SearchDiscoveryBooks";
 import { DownloadAndFormatBook } from "../../use_cases/DownloadAndFormatBook";
 import { GetPopularBooks } from "../../use_cases/GetPopularBooks";
@@ -18,11 +17,10 @@ const POPULAR_TTL_MS = 1000 * 60 * 30; // 30 minutes
 
 export class DiscoveryController {
   async popular(req: Request): Promise<Response> {
-    log("[DiscoveryController] popular() hit");
     try {
       const now = Date.now();
       
-      /* Cache desativado para teste
+      // Return from cache if valid
       if (POPULAR_CACHE.data && now - POPULAR_CACHE.lastFetch < POPULAR_TTL_MS) {
         return new Response(JSON.stringify(POPULAR_CACHE.data), {
           headers: { 
@@ -31,13 +29,14 @@ export class DiscoveryController {
           },
         });
       }
-      */
 
       const results = await popularUseCase.execute();
       
-      // Update cache
-      POPULAR_CACHE.data = results;
-      POPULAR_CACHE.lastFetch = now;
+      // Update cache only if we have data to avoid caching failures/empty lists
+      if (Array.isArray(results) && results.length > 0) {
+        POPULAR_CACHE.data = results;
+        POPULAR_CACHE.lastFetch = now;
+      }
 
       return new Response(JSON.stringify(results), {
         headers: { 

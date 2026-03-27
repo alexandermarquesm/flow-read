@@ -54,14 +54,12 @@ export const Home = () => {
         if (mounted) {
           if (response.ok) {
             const data = await response.json();
-            console.log("[FlowRead] Raw Data:", data);
             
             const mapped = (Array.isArray(data) ? data : []).slice(0, 6).map((b: any, i: number) => ({
               ...b,
               color: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
             }));
             
-            console.log("[FlowRead] Mapped Result:", mapped);
             setPopularBooks(mapped);
             localStorage.setItem("popular-books-cache", JSON.stringify(mapped));
             setLoading(false);
