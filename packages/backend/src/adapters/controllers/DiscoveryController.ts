@@ -1,3 +1,4 @@
+import { log } from "@flow-read/shared";
 import { SearchDiscoveryBooks } from "../../use_cases/SearchDiscoveryBooks";
 import { DownloadAndFormatBook } from "../../use_cases/DownloadAndFormatBook";
 import { GetPopularBooks } from "../../use_cases/GetPopularBooks";
@@ -17,6 +18,7 @@ const POPULAR_TTL_MS = 1000 * 60 * 30; // 30 minutes
 
 export class DiscoveryController {
   async popular(req: Request): Promise<Response> {
+    log("[DiscoveryController] popular() hit");
     try {
       const now = Date.now();
 

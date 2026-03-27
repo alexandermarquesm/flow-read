@@ -11,7 +11,9 @@ export class BiblioCliDiscoveryRepository implements IDiscoveryRepository {
 
   private async safeFetch(url: string, options?: RequestInit): Promise<Response> {
     try {
+      log(`[Discovery] Fetching URL: ${url}`);
       const response = await fetch(url, options);
+      log(`[Discovery] Status: ${response.status}`);
       this.warnedOffline = false;
       return response;
     } catch (error: any) {
