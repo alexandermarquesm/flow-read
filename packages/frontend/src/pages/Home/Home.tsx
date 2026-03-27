@@ -50,41 +50,28 @@ export const Home = () => {
 
     const fetchPopularWithRetry = async (retryCount = 0) => {
       try {
-        const fullUrl = `${API_URL}/api/discovery/popular`;
-        if (retryCount === 0) console.log(`[FlowRead] Initial fetch to: ${fullUrl}`);
-        
-        const response = await fetch(fullUrl);
+        const response = await fetch(`${API_URL}/api/discovery/popular`);
         if (mounted) {
           if (response.ok) {
-            console.log(`[FlowRead] Fetch success from ${fullUrl}`);
             const data = await response.json();
-            console.log(`[FlowRead] Data received:`, data);
-            
             const mapped = data.slice(0, 6).map((b: any, i: number) => ({
               ...b,
               color: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
             }));
-            
-            console.log(`[FlowRead] Mapped books:`, mapped);
             setPopularBooks(mapped);
             localStorage.setItem("popular-books-cache", JSON.stringify(mapped));
             setLoading(false);
-            console.log(`[FlowRead] Loading set to false, books length: ${mapped.length}`);
           } else if (retryCount < 8) {
-            console.warn(`[FlowRead] Backend returned ${response.status}. Retrying (${retryCount + 1}/8)...`);
             setTimeout(() => fetchPopularWithRetry(retryCount + 1), 5000);
           } else {
-            console.error(`[FlowRead] Backend failed with status ${response.status} after 8 retries.`);
             setLoading(false);
           }
         }
       } catch (err) {
         if (mounted) {
           if (retryCount < 8) {
-            console.log(`[FlowRead] Network error, retrying... (${retryCount + 1}/8)`);
             setTimeout(() => fetchPopularWithRetry(retryCount + 1), 5000);
           } else {
-            console.error("[FlowRead] Final network error after retries", err);
             setLoading(false);
           }
         }
