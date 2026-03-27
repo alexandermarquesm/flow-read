@@ -61,20 +61,22 @@ export const Home = () => {
             setPopularBooks(mapped);
             localStorage.setItem("popular-books-cache", JSON.stringify(mapped));
             setLoading(false);
-          } else if (retryCount < 2) {
-            // Se falhou (pode ser cold start do backend no Render), tenta mais 2 vezes com delay menor
-            console.warn(`Fetch failed (status ${response.status}). Retrying (${retryCount + 1}/2)...`);
-            setTimeout(() => fetchPopularWithRetry(retryCount + 1), 3000);
+          } else if (retryCount < 8) {
+            // Render cold start can take up to 40s. Retrying every 5s.
+            console.log(`[FlowRead] Backend is waking up... (${retryCount + 1}/8)`);
+            setTimeout(() => fetchPopularWithRetry(retryCount + 1), 5000);
           } else {
+            console.error("[FlowRead] Backend failed to wake up after 40s.");
             setLoading(false);
           }
         }
       } catch (err) {
         if (mounted) {
-          if (retryCount < 2) {
-            setTimeout(() => fetchPopularWithRetry(retryCount + 1), 3000);
+          if (retryCount < 8) {
+            console.log(`[FlowRead] Connection attempt failed, retrying... (${retryCount + 1}/8)`);
+            setTimeout(() => fetchPopularWithRetry(retryCount + 1), 5000);
           } else {
-            console.error("Fetch failed after retries", err);
+            console.error("[FlowRead] Fetch failed after retries", err);
             setLoading(false);
           }
         }
